@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>⚙️ Configurações do Sistema</h2>
+        <a href="{% url 'kit_manage' %}" class="btn btn-primary">🎁 Gerenciar Kits & Combos</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="configTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link {% if active_tab == 'company' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#company" type="button">🏢 Empresa</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link {% if active_tab == 'brands' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#brands" type="button">🏷️ Marcas</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link {% if active_tab == 'families' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#families" type="button">🌸 Famílias Olfativas</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link {% if active_tab == 'categories' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#categories" type="button">📂 Categorias</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link {% if active_tab == 'suppliers' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#suppliers" type="button">🚚 Fornecedores</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link {% if active_tab == 'payments' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#payments" type="button">💳 Pagamentos</button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="configTabsContent">
+                
+                <!-- Aba Empresa -->
+                <div class="tab-pane fade {% if active_tab == 'company' %}show active{% endif %}" id="company">
+                    {% if active_tab == 'company' and messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="company_form" value="1">
+                        <div class="row g-3">
+                            {% for field in company_form %}
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-primary">💾 Salvar Dados da Empresa</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Aba Marcas -->
+                <div class="tab-pane fade {% if active_tab == 'brands' %}show active{% endif %}" id="brands">
+                    {% if active_tab == 'brands' and messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Nova Marca</h5>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_action" value="add">
+                                        <input type="hidden" name="model_type" value="brand">
+                                        <div class="input-group mb-3">
+                                            <input type="text" name="item_name" class="form-control" placeholder="Nome da Marca" required>
+                                            <button class="btn btn-success" type="submit">Adicionar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <h5 class="mb-3">Marcas Cadastradas</h5>
+                            <ul class="list-group" style="max-height: 400px; overflow-y: auto;">
+                                {% for item in brands %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ item.name }}
+                                    <form method="post" onsubmit="return confirm('Tem certeza que deseja remover este item?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_action" value="delete">
+                                        <input type="hidden" name="model_type" value="brand">
+                                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Remover">🗑️</button>
+                                    </form>
+                                </li>
+                                {% empty %}
+                                <li class="list-group-item text-muted">Nenhuma marca cadastrada.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aba Famílias -->
+                <div class="tab-pane fade {% if active_tab == 'families' %}show active{% endif %}" id="families">
+                    {% if active_tab == 'families' and messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Nova Família Olfativa</h5>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_action" value="add">
+                                        <input type="hidden" name="model_type" value="family">
+                                        <div class="input-group mb-3">
+                                            <input type="text" name="item_name" class="form-control" placeholder="Ex: Floral, Amadeirado" required>
+                                            <button class="btn btn-success" type="submit">Adicionar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <h5 class="mb-3">Famílias Cadastradas</h5>
+                            <ul class="list-group" style="max-height: 400px; overflow-y: auto;">
+                                {% for item in olfactory_families %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ item.name }}
+                                    <form method="post" onsubmit="return confirm('Remover este item?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_action" value="delete">
+                                        <input type="hidden" name="model_type" value="family">
+                                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑️</button>
+                                    </form>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aba Categorias -->
+                <div class="tab-pane fade {% if active_tab == 'categories' %}show active{% endif %}" id="categories">
+                    {% if active_tab == 'categories' and messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Nova Categoria</h5>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_action" value="add">
+                                        <input type="hidden" name="model_type" value="category">
+                                        <div class="input-group mb-3">
+                                            <input type="text" name="item_name" class="form-control" placeholder="Ex: Perfumaria, Corpo" required>
+                                            <button class="btn btn-success" type="submit">Adicionar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <h5 class="mb-3">Categorias Cadastradas</h5>
+                            <ul class="list-group">
+                                {% for item in categories %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ item.name }}
+                                    <form method="post" onsubmit="return confirm('Remover este item?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_action" value="delete">
+                                        <input type="hidden" name="model_type" value="category">
+                                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑️</button>
+                                    </form>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aba Fornecedores -->
+                <div class="tab-pane fade {% if active_tab == 'suppliers' %}show active{% endif %}" id="suppliers">
+                    {% if active_tab == 'suppliers' and messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Novo Fornecedor</h5>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_action" value="add">
+                                        <input type="hidden" name="model_type" value="supplier">
+                                        <div class="input-group mb-3">
+                                            <input type="text" name="item_name" class="form-control" placeholder="Nome do Fornecedor" required>
+                                            <button class="btn btn-success" type="submit">Adicionar</button>
+                                        </div>
+                                        <small class="text-muted">Cadastre o nome aqui. Para editar CNPJ e outros dados, use o painel administrativo.</small>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <h5 class="mb-3">Fornecedores Cadastrados</h5>
+                            <ul class="list-group">
+                                {% for item in suppliers %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ item.name }}
+                                    <form method="post" onsubmit="return confirm('Remover este item?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_action" value="delete">
+                                        <input type="hidden" name="model_type" value="supplier">
+                                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑️</button>
+                                    </form>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aba Pagamentos -->
+                <div class="tab-pane fade {% if active_tab == 'payments' %}show active{% endif %}" id="payments">
+                    {% if active_tab == 'payments' and messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">Nova Forma de Pagamento</h5>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_action" value="add">
+                                        <input type="hidden" name="model_type" value="payment_method">
+                                        <div class="input-group mb-3">
+                                            <input type="text" name="item_name" class="form-control" placeholder="Ex: Pix, Crédito 3x" required>
+                                            <button class="btn btn-success" type="submit">Adicionar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <h5 class="mb-3">Formas de Pagamento</h5>
+                            <ul class="list-group">
+                                {% for item in payment_methods %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ item.name }}
+                                    <form method="post" onsubmit="return confirm('Remover este item?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_action" value="delete">
+                                        <input type="hidden" name="model_type" value="payment_method">
+                                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">🗑️</button>
+                                    </form>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

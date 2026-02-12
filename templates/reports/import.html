@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 style="color: #2c3e50;">🧾 Central Fiscal</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Seção Fiscal: Emissão de Documentos -->
+    <div class="card p-4 mb-4 shadow-sm border-0">
+        <h4 class="mb-3 text-primary">🖨️ Emissão de Documentos Fiscais (Últimas Vendas)</h4>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#ID</th>
+                        <th>Data</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                        <th style="text-align: right;">Ações Fiscais</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in sales %}
+                    <tr>
+                        <td><strong>{{ sale.id }}</strong></td>
+                        <td>{{ sale.created_at|date:"d/m/Y H:i" }}</td>
+                        <td>{{ sale.customer.name|default:"Consumidor Final" }}</td>
+                        <td class="fw-bold text-success">R$ {{ sale.total|floatformat:2 }}</td>
+                        <td style="text-align: right;">
+                            <a href="{% url 'download_fiscal' sale.id 'cupom' %}" class="btn btn-sm btn-outline-dark" title="Imprimir Cupom">
+                                🧾 Cupom
+                            </a>
+                            <a href="{% url 'download_fiscal' sale.id 'nfe' %}" class="btn btn-sm btn-outline-primary" title="Gerar XML NF-e">
+                                📄 Nota Fiscal (XML)
+                            </a>
+                            <a href="{% url 'download_fiscal' sale.id 'danfe' %}" class="btn btn-sm btn-outline-danger" title="Imprimir DANFE">
+                                🖨️ DANFE (PDF)
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted">Nenhuma venda encontrada.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

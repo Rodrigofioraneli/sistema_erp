@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="p-5 mb-4 bg-light rounded-3 shadow-sm text-center border">
+        <div style="font-size: 4rem; margin-bottom: 10px;">💎</div>
+        <h1 class="display-4 fw-bold text-primary">Provence Brasil</h1>
+        <p class="col-md-8 fs-4 mx-auto text-muted">Sistema Integrado de Gestão para Perfumaria</p>
+        <hr class="my-4">
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="mt-4">
+            {% if user.is_authenticated %}
+                <div class="card shadow-sm text-start mx-auto" style="max-width: 800px;">
+                    <div class="card-header bg-white py-3">
+                        <h4 class="mb-0 text-primary">🏢 Cadastro da Empresa</h4>
+                        <small class="text-muted">Estes dados sairão no Cupom e na Nota Fiscal</small>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                {% for field in form %}
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-muted">{{ field.label }}</label>
+                                    {{ field }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="text-end mt-4">
+                                <button type="button" id="btn-consultar-cnpj" class="btn btn-outline-primary me-2">🔍 Consultar CNPJ</button>
+                                <button type="submit" class="btn btn-success px-4">💾 Salvar Configurações</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="row justify-content-center">
+                    <div class="col-md-5">
+                        <div class="card shadow-sm text-start">
+                            <div class="card-body p-4">
+                                <h5 class="card-title text-center mb-3">Acesso Restrito</h5>
+                                <form method="post" action="{% url 'login' %}">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label for="id_username" class="form-label">Usuário</label>
+                                        <input type="text" name="username" class="form-control" id="id_username" placeholder="Digite seu usuário" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="id_password" class="form-label">Senha</label>
+                                        <input type="password" name="password" class="form-control" id="id_password" placeholder="Digite sua senha" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">Entrar</button>
+                                    <input type="hidden" name="next" value="{% url 'reports_dashboard' %}">
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const cnpjInput = document.getElementById('id_cnpj');
+        const btnConsultar = document.getElementById('btn-consultar-cnpj');
+        
+        // Função para buscar dados do CNPJ
+        function consultarCNPJ() {
+            const cnpj = cnpjInput.value.replace(/\D/g, '');
+            
+            if (cnpj.length !== 14) {
+                alert("Por favor, digite um CNPJ válido (14 números).");
+                return;
+            }
+
+            // Feedback visual
+            document.getElementById('id_name').placeholder = "Buscando...";
+            document.getElementById('id_address').placeholder = "Buscando...";
+
+            fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('CNPJ não encontrado');
+                    return response.json();
+                })
+                .then(data => {
+                    // Preenche Razão Social (ou Nome Fantasia se houver)
+                    document.getElementById('id_name').value = data.nome_fantasia || data.razao_social;
+                    
+                    // Preenche Email
+                    if(data.email) document.getElementById('id_email').value = data.email;
+                    
+                    // Preenche Telefone
+                    if(data.ddd_telefone_1) {
+                        document.getElementById('id_phone').value = `(${data.ddd_telefone_1.substring(0,2)}) ${data.ddd_telefone_1.substring(2)}`;
+                    }
+
+                    // Monta o Endereço Completo
+                    const endereco = `${data.logradouro}, ${data.numero} ${data.complemento || ''} - ${data.bairro}, ${data.municipio} - ${data.uf}, CEP: ${data.cep}`;
+                    document.getElementById('id_address').value = endereco;
+                })
+                .catch(error => {
+                    alert("Erro ao buscar CNPJ. Verifique o número ou preencha manualmente.");
+                    console.error(error);
+                });
+        }
+
+        // Aciona ao clicar no botão ou ao sair do campo CNPJ
+        if(btnConsultar) btnConsultar.addEventListener('click', consultarCNPJ);
+        if(cnpjInput) cnpjInput.addEventListener('blur', consultarCNPJ);
+    });
+</script>
+{% endblock %}

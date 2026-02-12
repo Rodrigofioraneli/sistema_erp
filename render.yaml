@@ -1,0 +1,28 @@
+databases:
+  - name: perfume_db
+    databaseName: perfume_erp
+    user: perfume_user
+
+services:
+  - type: web
+    name: perfume_erp
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.5
+      - key: DATABASE_URL
+        fromDatabase:
+          name: perfume_db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_EMAIL
+        value: admin@loja.com
+      - key: ADMIN_PASS
+        value: admin123

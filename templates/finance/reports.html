@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .report-card { background: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; }
+    .report-title { color: #2c3e50; margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    .big-number { font-size: 2.5rem; font-weight: bold; color: #8e44ad; }
+    
+    .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; }
+    .bar-label { width: 150px; text-align: right; font-size: 0.9rem; }
+    .bar-container { flex-grow: 1; background: #ecf0f1; height: 20px; border-radius: 10px; overflow: hidden; }
+    .bar-fill { height: 100%; background: #3498db; }
+    .bar-value { width: 80px; font-weight: bold; }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h1 style="margin: 0; color: #2c3e50;">📊 Relatórios Gerenciais</h1>
+    <a href="{% url 'finance_dashboard' %}" style="text-decoration: none; color: #7f8c8d;">⬅️ Voltar</a>
+</div>
+
+<div class="report-card" style="text-align: center;">
+    <h3 class="report-title">🎫 Ticket Médio</h3>
+    <div class="big-number">R$ {{ avg_ticket|floatformat:2 }}</div>
+    <p style="color: #7f8c8d;">Valor médio gasto por cliente em vendas finalizadas.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <!-- Lucro por Produto -->
+    <div class="report-card">
+        <h3 class="report-title">🏆 Top 10 Lucro por Produto</h3>
+        <div class="bar-chart">
+            {% for name, profit in top_products %}
+            <div class="bar-row">
+                <div class="bar-label">{{ name }}</div>
+                <div class="bar-container">
+                    <!-- Simulação visual de barra (largura fixa para demo, ideal seria calcular %) -->
+                    <div class="bar-fill" style="width: 80%; background: #2ecc71;"></div>
+                </div>
+                <div class="bar-value">R$ {{ profit|floatformat:0 }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Lucro por Marca -->
+    <div class="report-card">
+        <h3 class="report-title">🏢 Top 10 Lucro por Marca</h3>
+        <div class="bar-chart">
+            {% for name, profit in top_brands %}
+            <div class="bar-row">
+                <div class="bar-label">{{ name }}</div>
+                <div class="bar-container"><div class="bar-fill" style="width: 70%; background: #9b59b6;"></div></div>
+                <div class="bar-value">R$ {{ profit|floatformat:0 }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

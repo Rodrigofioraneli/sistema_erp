@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="color: #2c3e50;">👥 Gestão de Clientes</h2>
+        <a href="{% url 'customer_create' %}" class="btn btn-success">
+            <span style="margin-right: 5px;">+</span> Novo Cliente
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Barra de Busca -->
+    <div class="card p-3 mb-4 shadow-sm border-0">
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control" placeholder="🔍 Buscar por nome ou CPF/CNPJ..." value="{{ search_query }}">
+            <button type="submit" class="btn btn-primary">Buscar</button>
+            {% if search_query %}
+                <a href="{% url 'customer_list' %}" class="btn btn-outline-secondary">Limpar</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Tabela de Clientes -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>CPF/CNPJ</th>
+                            <th>Contato</th>
+                            <th>Localização</th>
+                            <th style="text-align: right;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for customer in customers %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'customer_detail' customer.pk %}" class="fw-bold text-dark text-decoration-none">{{ customer.name }}</a>
+                            </td>
+                            <td>
+                                <span class="text-muted small">{{ customer.cpf_cnpj|default:"-" }}</span>
+                            </td>
+                            <td>
+                                <div>{{ customer.phone|default:"-" }}</div>
+                                <div class="text-muted small">{{ customer.email|default:"" }}</div>
+                            </td>
+                            <td>
+                                {% if customer.city %}
+                                    {{ customer.city }}/{{ customer.state }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'customer_edit' customer.pk %}" class="btn btn-sm btn-outline-primary">✏️ Editar</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center py-5 text-muted">Nenhum cliente encontrado.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DataTables para Filtros e Ordenação tipo Excel -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $('.table').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json"
+            },
+            "pageLength": 25
+        });
+    });
+</script>
+{% endblock %}

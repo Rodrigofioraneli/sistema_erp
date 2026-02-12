@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="background: white; padding: 40px; border-radius: 12px; max-width: 600px; margin: 0 auto;">
+    <h2 style="margin-top: 0; color: #2c3e50;">💰 Lançamento Financeiro</h2>
+    <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 20px;">
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Descrição</label>
+            {{ form.description }}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div><label style="display: block; font-weight: bold; margin-bottom: 5px;">Tipo</label>{{ form.transaction_type }}</div>
+            <div><label style="display: block; font-weight: bold; margin-bottom: 5px;">Valor (R$)</label>{{ form.value }}</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div><label style="display: block; font-weight: bold; margin-bottom: 5px;">Vencimento</label>{{ form.due_date }}</div>
+            <div><label style="display: block; font-weight: bold; margin-bottom: 5px;">Pagamento (Opcional)</label>{{ form.payment_date }}</div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 5px;">Status</label>
+            {{ form.status }}
+        </div>
+
+        <button type="submit" style="background: #27ae60; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 1rem; cursor: pointer; width: 100%;">Salvar Lançamento</button>
+        
+        {% if form.instance.pk %}
+        <a href="{% url 'transaction_delete' form.instance.pk %}" onclick="return confirm('Excluir?')" style="display: block; text-align: center; color: #c0392b; margin-top: 15px; text-decoration: none;">Excluir Lançamento</a>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,423 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="color: #2c3e50;">
+            {% if form.instance.pk %}
+                ✏️ Editando Produto
+            {% else %}
+                ✨ Novo Produto
+            {% endif %}
+        </h2>
+        <div>
+            <a href="{% url 'kit_manage' %}" class="btn btn-outline-primary me-2">🎁 Criar Kit</a>
+            <button class="btn btn-info" type="button" onclick="startCameraScan()">
+                📷 Escanear QR Code
+            </button>
+            <a href="{% url 'product_list' %}" class="btn btn-outline-secondary">Voltar</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Layout Personalizado -->
+                <div class="row">
+                    <!-- Coluna Esquerda: Imagem -->
+                    <div class="col-md-3 mb-4">
+                        <div class="card bg-light border-0 h-100">
+                            <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
+                                <div class="mb-3" style="width: 100%; height: 200px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 8px; border: 1px solid #dee2e6;">
+                                    <img id="imgPreview" src="{% if form.instance.image %}{{ form.instance.image.url }}{% elif form.instance.image_url %}{{ form.instance.image_url }}{% endif %}" 
+                                         style="max-width: 100%; max-height: 100%; {% if not form.instance.image and not form.instance.image_url %}display: none;{% endif %}">
+                                    <span id="imgPlaceholder" class="text-muted small" {% if form.instance.image or form.instance.image_url %}style="display: none;"{% endif %}>
+                                        📷 Sem Imagem
+                                    </span>
+                                </div>
+                                <div class="w-100 mb-2 text-start">
+                                    <label class="form-label small fw-bold">Upload Imagem</label>
+                                    {{ form.image }}
+                                </div>
+                                <div class="w-100 text-start">
+                                    <label class="form-label small fw-bold">URL da Imagem</label>
+                                    {{ form.image_url }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Coluna Direita: Dados Principais -->
+                    <div class="col-md-9">
+                        <div class="row g-3">
+                            <!-- Código de Barras (Acima do nome, à direita) -->
+                            <div class="col-md-4 offset-md-8">
+                                <label for="{{ form.barcode.id_for_label }}" class="form-label fw-bold">Código de Barras</label>
+                                {{ form.barcode }}
+                            </div>
+
+                            <!-- Nome -->
+                            <div class="col-12">
+                                <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">Nome do Produto</label>
+                                {{ form.name }}
+                            </div>
+                            
+                            <!-- Preços (Movido para abaixo do Nome) -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Preço de Custo</label>
+                                {{ form.cost_price }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-success">Margem de Lucro (%)</label>
+                                <input type="number" id="profit_margin" class="form-control" placeholder="Ex: 50" step="0.01">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Preço de Venda</label>
+                                {{ form.selling_price }}
+                            </div>
+
+                            <!-- Descrição (Logo abaixo do nome) -->
+                            <div class="col-12">
+                                <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">Descrição</label>
+                                {{ form.description }}
+                            </div>
+
+                            <!-- Estoque (Logo abaixo da descrição) -->
+                            <div class="col-md-4">
+                                <label for="{{ form.stock_quantity.id_for_label }}" class="form-label fw-bold">Qtd. em Estoque</label>
+                                {{ form.stock_quantity }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.min_stock.id_for_label }}" class="form-label fw-bold">Estoque Mínimo</label>
+                                {{ form.min_stock }}
+                            </div>
+
+                            <!-- Linha de Classificação -->
+                            <div class="col-md-4">
+                                <label for="{{ form.brand.id_for_label }}" class="form-label fw-bold">Marca</label>
+                                {{ form.brand }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.line.id_for_label }}" class="form-label fw-bold">Linha</label>
+                                {{ form.line }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.olfactory_family.id_for_label }}" class="form-label fw-bold">Família Olfativa</label>
+                                {{ form.olfactory_family }}
+                            </div>
+
+                            <!-- Outros Detalhes -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Tipo</label>
+                                {{ form.product_type }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Gênero</label>
+                                {{ form.gender }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Volume</label>
+                                {{ form.volume }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Validade</label>
+                                {{ form.expiration_date }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Lote</label>
+                                {{ form.batch_code }}
+                            </div>
+
+                            <!-- Notas Olfativas (Quadros menores) -->
+                            <div class="col-12 mt-3"><h6 class="text-muted border-bottom pb-2">Pirâmide Olfativa</h6></div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Notas de Saída</label>
+                                {{ form.top_notes }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Notas de Corpo</label>
+                                {{ form.heart_notes }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Notas de Fundo</label>
+                                {{ form.base_notes }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-end">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        {% if form.instance.pk %}
+                            Salvar Alterações
+                        {% else %}
+                            Cadastrar Produto
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Produtos Recentes (Catálogo Rápido) -->
+<div class="container mt-5">
+    <h4 class="mb-3 text-secondary">Últimos Produtos Cadastrados</h4>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 60px;">Imagem</th>
+                    <th>Nome</th>
+                    <th>Marca</th>
+                    <th>Estoque</th>
+                    <th>Preço</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td>
+                        <img src="{% if p.image %}{{ p.image.url }}{% elif p.image_url %}{{ p.image_url }}{% else %}https://via.placeholder.com/40?text=Foto{% endif %}" 
+                             alt="{{ p.name }}" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                    </td>
+                    <td>{{ p.name }}</td>
+                    <td>{{ p.brand.name|default:"-" }}</td>
+                    <td>{{ p.stock_quantity }}</td>
+                    <td>R$ {{ p.selling_price }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Datalists para Autocomplete -->
+<datalist id="brands_list">
+    {% for brand in brands %}
+        <option value="{{ brand.name }}">
+    {% endfor %}
+</datalist>
+<datalist id="families_list">
+    {% for family in families %}
+        <option value="{{ family.name }}">
+    {% endfor %}
+</datalist>
+<datalist id="types_list">
+    <option value="Perfume (Frasco)">
+    <option value="Decant (Amostra)">
+    <option value="Kit / Combo">
+    <option value="Cosmético">
+</datalist>
+
+<!-- Modal de Leitura de Câmera (copiado do PDV) -->
+<div class="modal fade" id="scanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Escanear QR Code do Produto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="stopCameraScan()"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="reader" style="width: 100%;"></div>
+                <p class="mt-2 text-muted">Aponte a câmera para o QR Code com os dados do produto.</p>
+                <div class="alert alert-info mt-2 small">
+                    <strong>Exemplo de QR Code (JSON):</strong><br>
+                    <pre class="text-start" style="font-size: 0.7rem;"><code>{
+  "name": "Malbec Gold",
+  "barcode": "7891033480375",
+  "brand": "O Boticário",
+  "volume": "100ml",
+  "cost_price": "120.50",
+  "selling_price": "189.90"
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts para a câmera -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+    let html5QrcodeScanner;
+
+    function startCameraScan() {
+        const modal = new bootstrap.Modal(document.getElementById('scanModal'));
+        modal.show();
+
+        html5QrcodeScanner = new Html5Qrcode("reader");
+        
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        html5QrcodeScanner.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+        .catch(err => {
+            console.error("Erro ao iniciar câmera", err);
+            alert("Erro ao iniciar a câmera. Verifique as permissões.");
+        });
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        console.log(`QR Code lido: ${decodedText}`);
+        stopCameraScan();
+        
+        try {
+            const productData = JSON.parse(decodedText);
+            if (typeof productData === 'object' && productData !== null) {
+                populateForm(productData);
+                alert('Dados do produto preenchidos!');
+            } else {
+                throw new Error("Não é um objeto JSON válido (provavelmente apenas números)");
+            }
+        } catch (e) {
+            // Se der erro no JSON, verifica se é um link (URL)
+            if (decodedText.toLowerCase().startsWith('http')) {
+                const urlField = document.getElementById('id_image_url');
+                if (urlField) {
+                    urlField.value = decodedText;
+                    alert('O QR Code é um link! O endereço foi salvo no campo "URL da Imagem".');
+                }
+            } else {
+                // Se não for JSON nem URL, assume que é o código de barras
+                const barcodeField = document.getElementById('id_barcode');
+                if (barcodeField) {
+                    barcodeField.value = decodedText;
+                    alert('Código de barras preenchido!');
+                }
+            }
+        }
+    }
+
+    function onScanFailure(error) {
+        // Falha na leitura (pode ignorar logs)
+    }
+
+    function stopCameraScan() {
+        if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+            html5QrcodeScanner.stop().then(() => {
+                const modalEl = document.getElementById('scanModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            }).catch(err => console.error(err));
+        }
+    }
+
+    function populateForm(data) {
+        // Mapeia as chaves do JSON para os IDs dos campos do formulário Django
+        const fieldMapping = {
+            name: 'id_name', line: 'id_line', volume: 'id_volume', barcode: 'id_barcode',
+            batch_code: 'id_batch_code', expiration_date: 'id_expiration_date',
+            cost_price: 'id_cost_price', selling_price: 'id_selling_price',
+            stock_quantity: 'id_stock_quantity', min_stock: 'id_min_stock',
+            image_url: 'id_image_url', description: 'id_description',
+            top_notes: 'id_top_notes', heart_notes: 'id_heart_notes', base_notes: 'id_base_notes',
+        };
+
+        for (const key in data) {
+            if (fieldMapping[key]) {
+                const field = document.getElementById(fieldMapping[key]);
+                if (field) {
+                    field.value = data[key];
+                }
+            }
+        }
+        updateImagePreview(); // Atualiza preview após preencher
+    }
+
+    // --- Lógica de Porcentagem e Preview de Imagem ---
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- MEMÓRIA DE CADASTRO ---
+        // Recupera valores salvos se os campos estiverem vazios (novo produto)
+        const brandInput = document.getElementById('id_brand');
+        const familyInput = document.getElementById('id_olfactory_family');
+        const lineInput = document.getElementById('id_line');
+
+        if (brandInput && !brandInput.value) brandInput.value = localStorage.getItem('last_brand') || '';
+        if (familyInput && !familyInput.value) familyInput.value = localStorage.getItem('last_family') || '';
+        if (lineInput && !lineInput.value) lineInput.value = localStorage.getItem('last_line') || '';
+
+        // Salva valores ao enviar o formulário
+        const form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                if(brandInput) localStorage.setItem('last_brand', brandInput.value);
+                if(familyInput) localStorage.setItem('last_family', familyInput.value);
+                if(lineInput) localStorage.setItem('last_line', lineInput.value);
+            });
+        }
+        // ---------------------------
+
+        // 1. Inserir campo de Margem de Lucro após o Preço de Custo
+        // (O campo agora já existe no HTML, apenas pegamos a referência)
+        const costField = document.getElementById('id_cost_price');
+        if (costField) {
+            const marginField = document.getElementById('profit_margin');
+            const sellingField = document.getElementById('id_selling_price');
+
+            // Eventos de Cálculo
+            function calculateSelling() {
+                const cost = parseFloat(costField.value.replace(',', '.')) || 0;
+                const margin = parseFloat(marginField.value) || 0;
+                if (cost > 0) {
+                    const selling = cost + (cost * (margin / 100));
+                    sellingField.value = selling.toFixed(2).replace('.', ',');
+                }
+            }
+
+            function calculateMargin() {
+                const cost = parseFloat(costField.value.replace(',', '.')) || 0;
+                const selling = parseFloat(sellingField.value.replace(',', '.')) || 0;
+                if (cost > 0 && selling > 0) {
+                    const margin = ((selling - cost) / cost) * 100;
+                    marginField.value = margin.toFixed(2);
+                }
+            }
+
+            marginField.addEventListener('input', calculateSelling);
+            costField.addEventListener('input', calculateSelling); // Se mudar custo, recalcula venda (mantendo margem)
+            sellingField.addEventListener('input', calculateMargin); // Se mudar venda, recalcula margem
+        }
+
+        // 2. Preview de Imagem (URL)
+        const urlField = document.getElementById('id_image_url');
+        if (urlField) {
+            urlField.addEventListener('input', updateImagePreview);
+        }
+
+        // 3. Preview de Upload de Arquivo (Correção para visualizar foto ao selecionar do PC/Celular)
+        const fileInput = document.getElementById('id_image');
+        if (fileInput) {
+            fileInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const imgPreview = document.getElementById('imgPreview');
+                        const imgPlaceholder = document.getElementById('imgPlaceholder');
+                        if (imgPreview) {
+                            imgPreview.src = e.target.result;
+                            imgPreview.style.display = 'block';
+                        }
+                        if (imgPlaceholder) imgPlaceholder.style.display = 'none';
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+    });
+
+    function updateImagePreview() {
+        const urlField = document.getElementById('id_image_url');
+        const imgPreview = document.getElementById('imgPreview');
+        const imgPlaceholder = document.getElementById('imgPlaceholder');
+        
+        if (urlField && urlField.value) {
+            imgPreview.src = urlField.value;
+            imgPreview.style.display = 'block';
+            imgPlaceholder.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

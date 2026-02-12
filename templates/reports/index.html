@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4 px-4">
+    <!-- Cabeçalho e Filtros -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 style="color: #2c3e50;">📊 Dashboard & Relatórios</h2>
+            <p class="text-muted mb-0">Visão geral do desempenho da sua loja</p>
+        </div>
+    </div>
+
+    <!-- Filtros e Gerador de Relatórios -->
+    <div class="card border-0 shadow-sm mb-4" style="border-top: 4px solid #6c5ce7 !important;">
+        <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
+            <span>📑 Filtros & Relatórios Avançados</span>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Data Inicial</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Data Final</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Tipo de Relatório</label>
+                    <select name="report_type" class="form-select">
+                        <option value="sales" {% if report_type == 'sales' %}selected{% endif %}>Vendas Gerais</option>
+                        <option value="pending" {% if report_type == 'pending' %}selected{% endif %}>⏳ Vendas Pendentes / Orçamentos</option>
+                        <option value="inventory" {% if report_type == 'inventory' %}selected{% endif %}>📦 Estoque e Valoração</option>
+                        <option value="best_sellers" {% if report_type == 'best_sellers' %}selected{% endif %}>🏆 Produtos Mais Vendidos</option>
+                        <option value="sales_by_customer" {% if report_type == 'sales_by_customer' %}selected{% endif %}>👥 Vendas por Cliente</option>
+                        <option value="sales_by_brand" {% if report_type == 'sales_by_brand' %}selected{% endif %}>🏷️ Vendas por Marca</option>
+                        <option value="sales_by_user" {% if report_type == 'sales_by_user' %}selected{% endif %}>👔 Vendas por Vendedor</option>
+                        <option value="sales_by_payment" {% if report_type == 'sales_by_payment' %}selected{% endif %}>💳 Vendas por Pagamento</option>
+                        <option disabled>──────────</option>
+                        <option value="profit_by_product" {% if report_type == 'profit_by_product' %}selected{% endif %}>💰 Lucro por Produto</option>
+                        <option value="profit_by_sale" {% if report_type == 'profit_by_sale' %}selected{% endif %}>🧾 Lucro por Venda</option>
+                        <option value="cash_flow" {% if report_type == 'cash_flow' %}selected{% endif %}>💸 Movimento de Caixa</option>
+                        <option value="financial_expenses" {% if report_type == 'financial_expenses' %}selected{% endif %}>📉 Relatório de Despesas</option>
+                        <option value="balance_sheet" {% if report_type == 'balance_sheet' %}selected{% endif %}>⚖️ Balanço Patrimonial</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2 flex-wrap">
+                    <button type="submit" formaction="{% url 'reports_dashboard' %}" class="btn btn-primary w-100 fw-bold">🔄 Filtrar</button>
+                    <div class="btn-group w-100">
+                        <button type="submit" formaction="{% url 'reports_dashboard' %}#report-preview" class="btn btn-outline-secondary" title="Visualizar">👁️</button>
+                        <button type="submit" formaction="{% url 'download_report_file' %}" name="format" value="excel" class="btn btn-success" title="Excel">📊</button>
+                        <button type="submit" formaction="{% url 'download_report_file' %}" name="format" value="pdf" class="btn btn-danger" title="PDF">📄</button>
+                        <button type="button" onclick="window.print()" class="btn btn-dark" title="Imprimir">🖨️</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cards de KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 5px solid #2ecc71 !important;">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small fw-bold">Faturamento Total</h6>
+                    <h3 class="mb-0 text-success fw-bold">R$ {{ sales_metrics.total_revenue|floatformat:2 }}</h3>
+                    <small class="text-muted">{{ sales_metrics.total_count }} vendas realizadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 5px solid #3498db !important;">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small fw-bold">Lucro Bruto</h6>
+                    <h3 class="mb-0 text-primary fw-bold">R$ {{ sales_metrics.gross_profit|floatformat:2 }}</h3>
+                    <small class="text-muted">Margem: {{ sales_metrics.profit_margin|floatformat:1 }}%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 5px solid #9b59b6 !important;">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small fw-bold">Ticket Médio</h6>
+                    <h3 class="mb-0" style="color: #8e44ad;">R$ {{ sales_metrics.avg_ticket|floatformat:2 }}</h3>
+                    <small class="text-muted">Média por venda</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 5px solid #e74c3c !important;">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small fw-bold">Custo Produtos</h6>
+                    <h3 class="mb-0 text-danger fw-bold">R$ {{ sales_metrics.total_cost|floatformat:2 }}</h3>
+                    <small class="text-muted">Custo das mercadorias vendidas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção de Visualização de Relatório (Aparece ao clicar em Visualizar) -->
+    {% if report_data %}
+    <div class="card border-0 shadow-sm mb-4" id="report-preview" style="border-left: 5px solid #6c5ce7 !important;">
+        <div class="card-header bg-white fw-bold py-3">
+            📊 Resultado: {{ report_data.title }}
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            {% for header in report_data.headers %}
+                            <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in report_data.data %}
+                        <tr>
+                            {% for cell in row %}
+                            <td style="white-space: normal;">{{ cell }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="{{ report_data.headers|length }}" class="text-center py-4 text-muted">Nenhum dado encontrado para o período.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if report_data.summary %}
+        <div class="card-footer bg-light">
+            <div class="row text-center">
+                {% for k, v in report_data.summary.items %}
+                <div class="col">
+                    <small class="text-muted text-uppercase fw-bold">{{ k }}</small>
+                    <h4 class="text-dark fw-bold">{{ v }}</h4>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Tabelas Detalhadas -->
+    <div class="row g-4">
+        <!-- Top Produtos -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white fw-bold py-3">🏆 Top 5 Produtos Mais Vendidos</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Produto</th>
+                                    <th class="text-center">Qtd Vendida</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in top_products %}
+                                <tr>
+                                    <td style="white-space: normal;">{{ item.product__name }}</td>
+                                    <td class="text-center fw-bold">{{ item.total_qty }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="2" class="text-center text-muted py-3">Sem dados no período.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendas Recentes -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white fw-bold py-3">🕒 Últimas Vendas</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Data</th>
+                                    <th>Cliente</th>
+                                    <th class="text-end">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sale in recent_sales %}
+                                <tr>
+                                    <td><a href="#" class="text-decoration-none fw-bold">#{{ sale.id }}</a></td>
+                                    <td>{{ sale.created_at|date:"d/m H:i" }}</td>
+                                    <td style="white-space: normal;">{{ sale.customer.name|default:"Consumidor" }}</td>
+                                    <td class="text-end fw-bold text-success">R$ {{ sale.total|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-center text-muted py-3">Nenhuma venda recente.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos (Movido para o final) -->
+    <div class="row g-4 mb-4 mt-2">
+        <!-- Evolução Mensal -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white fw-bold py-3">📈 Evolução de Vendas e Lucro</div>
+                <div class="card-body">
+                    <canvas id="salesChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Formas de Pagamento -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white fw-bold py-3">💳 Formas de Pagamento</div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="paymentChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Dados para o Gráfico de Evolução
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    new Chart(salesCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for item in monthly_profit %}"{{ item.month }}",{% endfor %}],
+            datasets: [
+                { label: 'Faturamento', data: [{% for item in monthly_profit %}{{ item.revenue }},{% endfor %}], backgroundColor: '#3498db' },
+                { label: 'Lucro', data: [{% for item in monthly_profit %}{{ item.profit }},{% endfor %}], backgroundColor: '#2ecc71' }
+            ]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    // Dados para o Gráfico de Pagamentos
+    const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+    new Chart(paymentCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for item in payment_stats %}"{{ item.payment_method|title }}",{% endfor %}],
+            datasets: [{
+                data: [{% for item in payment_stats %}{{ item.total }},{% endfor %}],
+                backgroundColor: ['#e74c3c', '#f1c40f', '#3498db', '#9b59b6', '#34495e']
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+</script>
+{% endblock %}

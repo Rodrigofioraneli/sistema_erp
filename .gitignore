@@ -1,0 +1,19 @@
+# Python e Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+*.pot
+
+# Banco de Dados Local (Não subir para produção)
+db.sqlite3
+
+# Pastas de Mídia e Estáticos (Gerados automaticamente ou Uploads)
+media/
+staticfiles/
+
+# Configurações de Ambiente e IDE
+.env
+venv/
+.vscode/
+.idea/

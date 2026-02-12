@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 style="color: #f39c12;">⏳ Vendas Pendentes / Orçamentos</h2>
+    <p class="text-muted">Gerencie orçamentos e vendas aguardando pagamento. Ao efetivar, o estoque será baixado.</p>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#ID</th>
+                            <th>Data</th>
+                            <th>Cliente</th>
+                            <th>Itens</th>
+                            <th>Financeiro</th>
+                            <th style="text-align: right;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr>
+                            <td><strong>{{ sale.id }}</strong></td>
+                            <td>{{ sale.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>{{ sale.customer.name|default:"Consumidor Final" }}</td>
+                            <td>
+                                <small class="text-muted">
+                                    {% for item in sale.items.all %}
+                                        {{ item.quantity }}x {{ item.product.name }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">Total: R$ {{ sale.total|floatformat:2 }}</div>
+                                <div class="text-success small">Pago: R$ {{ sale.amount_paid|floatformat:2 }}</div>
+                                <div class="text-danger small fw-bold">Restam: R$ {{ sale.remaining|floatformat:2 }}</div>
+                            </td>
+                            <td style="text-align: right;">
+                                <button class="btn btn-sm btn-primary" onclick="openPaymentModal('{{ sale.id }}', '{{ sale.remaining|stringformat:'f' }}')">
+                                    💰 Pagar
+                                </button>
+                                <a href="{% url 'finalize_sale' sale.id %}" class="btn btn-sm btn-success" title="Confirmar Pagamento e Finalizar">
+                                    ✅ Efetivar Venda
+                                </a>
+                                <a href="{% url 'delete_sale' sale.id %}" class="btn btn-sm btn-outline-danger" title="Cancelar/Excluir" onclick="return confirm('Tem certeza que deseja excluir este orçamento?');">
+                                    🗑️
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center py-5 text-muted">Nenhuma venda pendente encontrada.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Pagamento -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="paymentForm" action="">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Registrar Pagamento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">Saldo Restante: <strong id="modalRemaining" class="text-danger">R$ 0,00</strong></p>
+          
+          <div class="mb-3">
+            <label class="form-label fw-bold">Valor do Pagamento</label>
+            <input type="number" step="0.01" name="amount" id="modalAmount" class="form-control" required>
+            <div class="form-text">Você pode digitar um valor parcial ou total.</div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label fw-bold">Forma de Pagamento</label>
+            <select name="payment_method" class="form-select">
+                <option value="pix">PIX</option>
+                <option value="credit">Crédito</option>
+                <option value="debit">Débito</option>
+                <option value="cash">Dinheiro</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Salvar Pagamento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openPaymentModal(saleId, remaining) {
+    const form = document.getElementById('paymentForm');
+    // Define a URL de ação do formulário dinamicamente
+    form.action = `/relatorios/vendas/pagamento/${saleId}/`;
+    
+    // Formata o valor para exibição
+    const remainingFloat = parseFloat(remaining.replace(',', '.'));
+    document.getElementById('modalRemaining').innerText = 'R$ ' + remainingFloat.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    
+    // Preenche o input com o valor restante (sugestão de pagamento total)
+    document.getElementById('modalAmount').value = remainingFloat.toFixed(2);
+    
+    // Abre o modal
+    new bootstrap.Modal(document.getElementById('paymentModal')).show();
+}
+</script>
+{% endblock %}

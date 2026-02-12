@@ -1,0 +1,15 @@
+# Python / Django
+*.pyc
+__pycache__/
+db.sqlite3
+.env
+venv/
+.vscode/
+.idea/
+
+# Media (Uploads de usuários não devem ir para o git, use S3 ou similar em produção real)
+# Para este projeto simples, pode manter, mas o ideal é ignorar:
+# media/
+
+# Static (Gerado pelo collectstatic)
+staticfiles/

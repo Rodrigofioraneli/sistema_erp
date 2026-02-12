@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 style="color: #2c3e50; margin-bottom: 20px;">📑 Relatórios Avançados</h2>
+
+    <!-- Filtros -->
+    <div class="card p-4 mb-4 shadow-sm border-0">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Tipo de Relatório</label>
+                <select name="report_type" class="form-select" onchange="this.form.submit()">
+                    <option value="sales" {% if report_type == 'sales' %}selected{% endif %}>Vendas Gerais</option>
+                    <option value="pending" {% if report_type == 'pending' %}selected{% endif %}>⏳ Vendas Pendentes / Orçamentos</option>
+                    <option value="inventory" {% if report_type == 'inventory' %}selected{% endif %}>📦 Estoque e Valoração</option>
+                    <option value="best_sellers" {% if report_type == 'best_sellers' %}selected{% endif %}>🏆 Produtos Mais Vendidos</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Data Inicial</label>
+                <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Data Final</label>
+                <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                <a href="{% url 'advanced_reports' %}" class="btn btn-outline-secondary">Limpar</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Ações de Exportação -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="text-primary mb-0">{{ title }}</h4>
+        <div class="btn-group">
+            <a href="{% url 'download_report_file' %}?report_type={{ report_type }}&format=excel&start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-success">
+                📊 Baixar Excel
+            </a>
+            <a href="{% url 'download_report_file' %}?report_type={{ report_type }}&format=pdf&start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-danger">
+                📄 Baixar PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Tabela de Resultados -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            {% for header in headers %}
+                            <th>{{ header }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                        <tr>
+                            {% for cell in row %}
+                            <td>{{ cell }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="{{ headers|length }}" class="text-center py-5 text-muted">
+                                Nenhum dado encontrado para os filtros selecionados.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Rodapé com Totais -->
+        {% if summary %}
+        <div class="card-footer bg-light">
+            <div class="row text-center">
+                {% for key, value in summary.items %}
+                <div class="col">
+                    <small class="text-muted text-uppercase fw-bold">{{ key }}</small>
+                    <h4 class="text-dark fw-bold">{{ value }}</h4>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
