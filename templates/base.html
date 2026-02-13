@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- DataTables CSS (Estilo para tabelas avançadas) -->
     <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- DataTables Responsive CSS -->
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
     <style>
         /* Ajuste para o conteúdo não ficar escondido atrás da navbar fixa */
         body { padding-top: 80px; background-color: #f4f6f9; font-family: 'Poppins', sans-serif; }
@@ -31,6 +33,15 @@
             white-space: normal !important;
             text-overflow: clip !important;
             height: auto !important;
+        }
+
+        /* Ajuste para navbar em telas de tablet para evitar quebra de linha */
+        @media (min-width: 992px) and (max-width: 1199.98px) {
+            .navbar-nav .nav-link {
+                font-size: 0.85rem;
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
         }
     </style>
 </head>
@@ -78,6 +89,9 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <!-- DataTables Responsive JS -->
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
     <!-- Plugin para busca sem acento no DataTables -->
     <script src="https://cdn.datatables.net/plug-ins/1.13.4/filtering/type-based/accent-neutralise.js"></script>
 
@@ -86,11 +100,13 @@
         $.fn.dataTable.ext.errMode = 'none';
 
         $(document).ready(function() {
-            // Inicializa o DataTables em todas as tabelas de listagem
-            $('.table').each(function() {
+            // Inicializa o DataTables em tabelas com a classe .datatable
+            // Para usar, adicione a classe "datatable" e "table" na sua <table>
+            $('table.datatable').each(function() {
                 // Verifica se já não é uma tabela do PDV (que tem lógica própria)
                 if (!$(this).closest('.pdv-container').length) {
                     var table = $(this).DataTable({
+                        "responsive": true, // Habilita a responsividade
                         "language": { "url": "//cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json" },
                         "retrieve": true, // Usa instância existente se houver
                         "dom": 'rtip',    // Define layout: (r)ocessando, (t)abela, (i)nfo, (p)aginação. Remove 'f' (filtro padrão).

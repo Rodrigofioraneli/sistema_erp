@@ -68,6 +68,82 @@
         {% endfor %}
     {% endif %}
 
+    <!-- Seção de Busca de Produtos (Estilo Cadastro) -->
+    <div class="card shadow-sm mb-5 border-0" id="searchSection">
+        <div class="card-body">
+            {% if active_kit %}
+                <div class="alert alert-info d-flex justify-content-between align-items-center border-0 shadow-sm" style="background: #e0f2fe; color: #0c4a6e;">
+                    <div>
+                        <h5 class="mb-1 fw-bold">✏️ Editando Kit: {{ active_kit.name }}</h5>
+                        <small>Busque produtos abaixo e clique em "Adicionar" para incluir neste kit.</small>
+                    </div>
+                    <a href="{% url 'kit_manage' %}" class="btn btn-light text-primary fw-bold shadow-sm">✅ Concluir Edição</a>
+                </div>
+            {% else %}
+                <h5 class="card-title mb-3 fw-bold text-secondary">🔍 Consultar Produtos</h5>
+            {% endif %}
+
+            <form method="get" class="row g-2 mb-3">
+                {% if active_kit %}
+                <input type="hidden" name="editing_kit" value="{{ active_kit.id }}">
+                {% endif %}
+                <div class="col-md-10">
+                    <input type="text" name="q" class="form-control form-control-lg" placeholder="Digite o nome do produto para consultar preço ou estoque..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-lg w-100">Buscar</button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 60px;">Imagem</th>
+                            <th>Nome</th>
+                            <th>Marca</th>
+                            <th>Estoque</th>
+                            <th>Preço</th>
+                            <th style="width: 150px;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in products_search %}
+                        <tr>
+                            <td>
+                                <img src="{% if p.image %}{{ p.image.url }}{% elif p.image_url %}{{ p.image_url }}{% else %}https://via.placeholder.com/40?text=Foto{% endif %}" 
+                                     alt="{{ p.name }}" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                            </td>
+                            <td>{{ p.name }}</td>
+                            <td>{{ p.brand.name|default:"-" }}</td>
+                            <td>{{ p.stock_quantity }}</td>
+                            <td>R$ {{ p.selling_price }}</td>
+                            <td>
+                                {% if active_kit %}
+                                <form method="post" class="d-flex gap-1">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="kit_action" value="add_component">
+                                    <input type="hidden" name="kit_id" value="{{ active_kit.id }}">
+                                    <input type="hidden" name="component_id" value="{{ p.id }}">
+                                    <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm" style="width: 60px;" title="Qtd">
+                                    <button type="submit" class="btn btn-success btn-sm fw-bold">Add</button>
+                                </form>
+                                {% else %}
+                                <span class="badge bg-light text-muted border">Selecione um kit</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">Nenhum produto encontrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4">
         <!-- Coluna Esquerda: Criar Novo Kit (Sticky) -->
         <div class="col-lg-4">
@@ -125,9 +201,42 @@
                                     <h5 class="card-title fw-bold text-dark mb-1">{{ kit.name }}</h5>
                                     <span class="kit-price-badge">R$ {{ kit.selling_price }}</span>
                                 </div>
-                                <button class="btn btn-light btn-sm rounded-circle shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#editKit{{ kit.id }}" aria-expanded="false" title="Editar Composição">
-                                    ⚙️
-                                </button>
+                                <div class="d-flex align-items-center gap-1">
+                                    {% if active_kit.id == kit.id %}
+                                    <span class="badge bg-warning text-dark">Editando...</span>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-light text-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#editKitData{{ kit.id }}" title="Configurações do Kit">
+                                        ⚙️
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Painel de Edição e Exclusão (Collapse) -->
+                            <div class="collapse mb-3" id="editKitData{{ kit.id }}">
+                                <div class="card card-body bg-light border-0 p-3">
+                                    <form method="post" class="mb-3">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="kit_action" value="update_kit">
+                                        <input type="hidden" name="kit_id" value="{{ kit.id }}">
+                                        
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold mb-0">Nome</label>
+                                            <input type="text" name="kit_name" class="form-control form-control-sm" value="{{ kit.name }}" required>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold mb-0">Preço</label>
+                                            <input type="text" name="kit_price" class="form-control form-control-sm" value="{{ kit.selling_price }}" oninput="formatMoney(this)" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">💾 Salvar Alterações</button>
+                                    </form>
+                                    
+                                    <form method="post" onsubmit="return confirm('Tem certeza? Isso apagará o kit permanentemente.');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="kit_action" value="delete_kit">
+                                        <input type="hidden" name="kit_id" value="{{ kit.id }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">🗑️ Excluir Kit</button>
+                                    </form>
+                                </div>
                             </div>
 
                             <!-- Lista de Itens (Preview) -->
@@ -145,45 +254,27 @@
                                 </ul>
                             </div>
 
-                            <!-- Área de Edição (Collapse) -->
-                            <div class="collapse" id="editKit{{ kit.id }}">
-                                <div class="border-top pt-3">
-                                    <p class="small fw-bold mb-2 text-primary">Gerenciar Itens</p>
-                                    
-                                    <!-- Lista para Remover -->
-                                    <ul class="list-group list-group-flush mb-3">
-                                        {% for comp in kit.components.all %}
-                                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-1 border-0">
-                                            <span class="small">{{ comp.quantity|floatformat:0 }}x {{ comp.component.name }}</span>
-                                            <form method="post" style="display:inline;">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="kit_action" value="remove_component">
-                                                <input type="hidden" name="component_pk" value="{{ comp.id }}">
-                                                <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none" style="font-size: 0.8rem;">Remover</button>
-                                            </form>
-                                        </li>
-                                        {% endfor %}
-                                    </ul>
-
-                                    <!-- Adicionar -->
-                                    <form method="post" class="row g-1 align-items-center">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="kit_action" value="add_component">
-                                        <input type="hidden" name="kit_id" value="{{ kit.id }}">
-                                        
-                                        <div class="col-8">
-                                            <input type="text" class="form-control form-control-sm rounded-pill" list="products_datalist" placeholder="Buscar produto..." onchange="updateComponentId(this, 'hidden_id_{{ kit.id }}')" required>
-                                            <input type="hidden" name="component_id" id="hidden_id_{{ kit.id }}">
-                                        </div>
-                                        <div class="col-2">
-                                            <input type="number" name="quantity" class="form-control form-control-sm rounded-pill text-center" value="1" min="1" required>
-                                        </div>
-                                        <div class="col-2">
-                                            <button type="submit" class="btn btn-success btn-sm w-100 rounded-pill">＋</button>
-                                        </div>
-                                    </form>
-                                </div>
+                            <!-- Botões de Ação -->
+                            <div class="d-flex gap-2 mt-auto">
+                                <a href="?editing_kit={{ kit.id }}#searchSection" class="btn btn-outline-primary btn-sm w-100">
+                                    ➕ Adicionar Produtos
+                                </a>
                             </div>
+                            
+                            <!-- Lista Rápida para Remover (Sempre visível se tiver itens) -->
+                            {% if kit.components.exists %}
+                            <div class="mt-2 border-top pt-2">
+                                <small class="text-muted d-block mb-1">Remover itens:</small>
+                                {% for comp in kit.components.all %}
+                                <form method="post" class="d-inline-block me-1 mb-1">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="kit_action" value="remove_component">
+                                    <input type="hidden" name="component_pk" value="{{ comp.id }}">
+                                    <button type="submit" class="badge bg-danger border-0 text-white" style="cursor:pointer;" title="Remover {{ comp.component.name }}">x {{ comp.component.name|truncatechars:10 }}</button>
+                                </form>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

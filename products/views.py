@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 from django.db.models import Q, F
 from .forms import ProductForm, StockMovementForm
 from .models import Product, OlfactoryFamily, Brand, StockMovement, ProductComponent
@@ -152,18 +153,59 @@ def kit_manage(request):
                     defaults={'quantity': qty}
                 )
                 messages.success(request, 'Produto adicionado ao Kit!')
+                return redirect(f"{reverse('kit_manage')}?editing_kit={kit_id}")
 
         elif action == 'remove_component':
             comp_id = request.POST.get('component_pk')
             ProductComponent.objects.filter(pk=comp_id).delete()
             messages.success(request, 'Produto removido do Kit.')
             
+        elif action == 'update_kit':
+            kit_id = request.POST.get('kit_id')
+            kit_name = request.POST.get('kit_name')
+            kit_price = request.POST.get('kit_price', '0').replace(',', '.')
+            
+            kit = get_object_or_404(Product, pk=kit_id, product_type='kit')
+            kit.name = kit_name
+            kit.selling_price = kit_price
+            kit.save()
+            messages.success(request, 'Dados do Kit atualizados!')
+
+        elif action == 'delete_kit':
+            kit_id = request.POST.get('kit_id')
+            Product.objects.filter(pk=kit_id, product_type='kit').delete()
+            messages.success(request, 'Kit excluído com sucesso!')
+            return redirect('kit_manage')
+            
         return redirect('kit_manage')
 
     kits = Product.objects.filter(product_type='kit').prefetch_related('components__component')
-    all_products = Product.objects.exclude(product_type='kit').order_by('name')
+    all_products = Product.objects.exclude(product_type='kit').select_related('brand').order_by('name')
+
+    # Verifica se há um kit sendo editado no momento
+    editing_kit_id = request.GET.get('editing_kit')
+    active_kit = None
+    if editing_kit_id:
+        active_kit = Product.objects.filter(pk=editing_kit_id).first()
+
+    # Lógica de Busca (Igual ao cadastro de produtos)
+    q = request.GET.get('q', '')
+    products_search = []
+    
+    if q:
+        q_norm = normalize_str(q)
+        products_search = [p for p in all_products if q_norm in normalize_str(p.name) or q_norm in normalize_str(p.barcode)]
+    elif active_kit:
+        # Se estiver editando um kit, mostra mais produtos para facilitar
+        products_search = Product.objects.exclude(product_type='kit').select_related('brand').order_by('-created_at')[:10]
+    else:
+        # Mostra os 5 últimos cadastrados por padrão
+        products_search = Product.objects.exclude(product_type='kit').select_related('brand').order_by('-created_at')[:5]
 
     return render(request, 'products/kit_manage.html', {
         'kits': kits,
-        'all_products': all_products
+        'all_products': all_products,
+        'products_search': products_search,
+        'search_query': q,
+        'active_kit': active_kit
     })
