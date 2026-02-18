@@ -169,7 +169,7 @@ class ProductForm(forms.ModelForm):
     # Campo de Margem de Lucro (Não salvo no banco, apenas para cálculo)
     profit_margin = forms.DecimalField(
         label="Margem de Lucro (%)", required=False, max_digits=10, decimal_places=2,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '0', 'id': 'id_profit_margin'})
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '0', 'id': 'id_profit_margin', 'style': 'text-align: left;', 'inputmode': 'decimal'})
     )
 
     class Meta:
@@ -208,19 +208,21 @@ class ProductForm(forms.ModelForm):
                 self.initial['profit_margin'] = round(margin, 2)
 
         # Habilita localização para campos decimais (aceitar vírgula)
+        self.fields['profit_margin'].localize = True
         self.fields['cost_price'].localize = True
         self.fields['selling_price'].localize = True
 
         for field in self.fields.values():
             if not isinstance(field.widget, (forms.CheckboxInput, forms.RadioSelect, forms.FileInput)):
-                field.widget.attrs['class'] = 'form-control'
+                existing_classes = field.widget.attrs.get('class', '')
+                if 'form-control' not in existing_classes:
+                    field.widget.attrs['class'] = f"{existing_classes} form-control".strip()
             if isinstance(field.widget, forms.FileInput):
                 field.widget.attrs['class'] = 'form-control'
 
         # Adiciona eventos JS para cálculo e formatação
-        self.fields['cost_price'].widget.attrs.update({'oninput': 'formatMoney(this); calculateSellingPrice()', 'onfocus': 'this.select()'})
-        self.fields['profit_margin'].widget.attrs.update({'oninput': 'calculateSellingPrice()', 'onfocus': 'this.select()'})
-        self.fields['selling_price'].widget.attrs.update({'oninput': 'formatMoney(this); calculateMargin()', 'onfocus': 'this.select()'})
+        self.fields['cost_price'].widget.attrs.update({'onfocus': 'this.select()'})
+        self.fields['selling_price'].widget.attrs.update({'onfocus': 'this.select()'})
 
     def clean_brand(self):
         name = self.cleaned_data.get('brand')

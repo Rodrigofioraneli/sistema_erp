@@ -1,24 +1,22 @@
-# Arquivos de Bytecode e Cache do Python
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
 
-# Ambiente Virtual
-.venv/
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Ambientes Virtuais
 venv/
 env/
+.env
 
-# Banco de Dados Local (SQLite)
-db.sqlite3
-*.sqlite3
-
-# Arquivos de Mídia (Uploads de Usuários)
-/media/
-
-# Arquivos Estáticos Coletados
-/staticfiles/
-
-# Arquivos de configuração de IDEs
+# IDEs e Sistema Operacional
 .vscode/
 .idea/
+Thumbs.db

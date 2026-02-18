@@ -4,7 +4,7 @@ from .models import Product, StockMovement
 class ProductForm(forms.ModelForm):
     profit_margin = forms.DecimalField(
         label="Margem (%)", required=False, max_digits=10, decimal_places=2,
-        widget=forms.NumberInput(attrs={'placeholder': 'Ex: 50'})
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 50', 'style': 'text-align: left;', 'inputmode': 'decimal'})
     )
 
     class Meta:
@@ -22,8 +22,8 @@ class ProductForm(forms.ModelForm):
             'barcode': forms.TextInput(attrs={'placeholder': '789...'}),
             'batch_code': forms.TextInput(attrs={'placeholder': 'Lote 123'}),
             'expiration_date': forms.DateInput(attrs={'type': 'date'}),
-            'cost_price': forms.NumberInput(attrs={'step': '0.01'}),
-            'selling_price': forms.NumberInput(attrs={'step': '0.01'}),
+            'cost_price': forms.TextInput(attrs={'class': 'money', 'placeholder': '0,00'}),
+            'selling_price': forms.TextInput(attrs={'class': 'money', 'placeholder': '0,00'}),
             'stock_quantity': forms.NumberInput(attrs={'step': '1'}),
             'min_stock': forms.NumberInput(attrs={'step': '1'}),
         }
@@ -36,9 +36,17 @@ class ProductForm(forms.ModelForm):
         if self.instance and self.instance.pk:
             self.fields['profit_margin'].initial = self.instance.profit_margin
 
+        # Garante que os campos usem vírgula ao editar (Localização)
+        self.fields['profit_margin'].localize = True
+        self.fields['cost_price'].localize = True
+        self.fields['selling_price'].localize = True
+
         for field_name, field in self.fields.items():
             if field_name != 'image':
-                field.widget.attrs['class'] = 'form-control'
+                # Adiciona form-control sem remover classes existentes (como 'money')
+                existing_classes = field.widget.attrs.get('class', '')
+                if 'form-control' not in existing_classes:
+                    field.widget.attrs['class'] = f"{existing_classes} form-control".strip()
             if readonly:
                 field.disabled = True
 
