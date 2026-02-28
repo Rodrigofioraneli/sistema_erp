@@ -143,190 +143,24 @@ def home_view(request):
 company_settings = home_view
 
 @login_required
-def product_list(request):
-    q = request.GET.get('q', '')
-    products = Product.objects.all().select_related('brand').order_by('name')
-    
-    if q:
-        # Filtra usando Python para ignorar acentos (ex: 'limão' == 'limao')
-        q_norm = normalize_str(q)
-        # Converte QuerySet para lista filtrada
-        products = [p for p in products if q_norm in normalize_str(p.name) or q_norm in normalize_str(p.barcode)]
-    
-    context = {
-        'products': products,
-        'search_query': q
-    }
-    return render(request, 'products/list.html', context)
-
-# --- Formulários e Views de Cadastro de Produtos ---
-
-class ProductForm(forms.ModelForm):
-    # Campos personalizados para permitir digitar ou selecionar (Datalist)
-    brand = forms.CharField(required=False, label="Marca", widget=forms.TextInput(attrs={'list': 'brands_list', 'class': 'form-control', 'placeholder': 'Selecione ou digite uma nova'}))
-    olfactory_family = forms.CharField(required=False, label="Família Olfativa", widget=forms.TextInput(attrs={'list': 'families_list', 'class': 'form-control', 'placeholder': 'Selecione ou digite uma nova'}))
-    
-    # Campo de Margem de Lucro (Não salvo no banco, apenas para cálculo)
-    profit_margin = forms.DecimalField(
-        label="Margem de Lucro (%)", required=False, max_digits=10, decimal_places=2,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '0', 'id': 'id_profit_margin', 'style': 'text-align: left;', 'inputmode': 'decimal'})
-    )
-
-    class Meta:
-        model = Product
-        fields = '__all__'
-        widgets = {
-            'name': forms.Textarea(attrs={'rows': 2}),
-            'expiration_date': forms.DateInput(attrs={'type': 'date'}),
-            'top_notes': forms.Textarea(attrs={'rows': 2}),
-            'heart_notes': forms.Textarea(attrs={'rows': 2}),
-            'base_notes': forms.Textarea(attrs={'rows': 2}),
-            'description': forms.Textarea(attrs={'rows': 2}),
-            'cost_price': forms.TextInput(attrs={'class': 'form-control money', 'placeholder': '0,00', 'id': 'id_cost_price'}),
-            'selling_price': forms.TextInput(attrs={'class': 'form-control money', 'placeholder': '0,00', 'id': 'id_selling_price'}),
-            'stock_quantity': forms.NumberInput(attrs={'class': 'form-control', 'onfocus': 'this.select()'}),
-            'min_stock': forms.NumberInput(attrs={'class': 'form-control', 'onfocus': 'this.select()'}),
-            'volume': forms.TextInput(attrs={'class': 'form-control', 'onfocus': 'this.select()'}),
-        }
-        
-    class Media:
-        js = ('js/product_scripts.js',)
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Preenche os campos de texto com os nomes das FKs se estiver editando
-        if self.instance.pk:
-            if self.instance.brand:
-                self.initial['brand'] = self.instance.brand.name
-            if self.instance.olfactory_family:
-                self.initial['olfactory_family'] = self.instance.olfactory_family.name
-
-            # Calcula a margem inicial se houver preços
-            if self.instance.cost_price and self.instance.selling_price and self.instance.cost_price > 0:
-                margin = ((self.instance.selling_price - self.instance.cost_price) / self.instance.cost_price) * 100
-                self.initial['profit_margin'] = round(margin, 2)
-
-        # Habilita localização para campos decimais (aceitar vírgula)
-        self.fields['profit_margin'].localize = True
-        self.fields['cost_price'].localize = True
-        self.fields['selling_price'].localize = True
-
-        for field in self.fields.values():
-            if not isinstance(field.widget, (forms.CheckboxInput, forms.RadioSelect, forms.FileInput)):
-                existing_classes = field.widget.attrs.get('class', '')
-                if 'form-control' not in existing_classes:
-                    field.widget.attrs['class'] = f"{existing_classes} form-control".strip()
-            if isinstance(field.widget, forms.FileInput):
-                field.widget.attrs['class'] = 'form-control'
-
-        # Adiciona eventos JS para cálculo e formatação
-        self.fields['cost_price'].widget.attrs.update({'onfocus': 'this.select()'})
-        self.fields['selling_price'].widget.attrs.update({'onfocus': 'this.select()'})
-
-    def clean_brand(self):
-        name = self.cleaned_data.get('brand')
-        if name:
-            brand_obj, _ = Brand.objects.get_or_create(name__iexact=name.strip(), defaults={'name': name.strip()})
-            return brand_obj
-        return None
-
-    def clean_olfactory_family(self):
-        name = self.cleaned_data.get('olfactory_family')
-        if name:
-            family_obj, _ = OlfactoryFamily.objects.get_or_create(name__iexact=name.strip(), defaults={'name': name.strip()})
-            return family_obj
-        return None
-
-@login_required
-def product_create(request):
-    if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Produto cadastrado com sucesso!')
-            return redirect('product_list')
-    else:
-        form = ProductForm()
-    
-    # Contexto para a aba de catálogo no form (se usada)
-    products = Product.objects.all().select_related('brand').order_by('-created_at')[:20]
-    brands = Brand.objects.all().order_by('name')
-    families = OlfactoryFamily.objects.all().order_by('name')
-    
-    return render(request, 'products/product_form.html', {'form': form, 'products': products, 'brands': brands, 'families': families})
-
-@login_required
-def product_edit(request, pk):
-    product = get_object_or_404(Product, pk=pk)
-    if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES, instance=product)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Produto atualizado com sucesso!')
-            return redirect('product_list')
-    else:
-        form = ProductForm(instance=product)
-    
-    products = Product.objects.all().select_related('brand').order_by('-created_at')[:20]
-    brands = Brand.objects.all().order_by('name')
-    families = OlfactoryFamily.objects.all().order_by('name')
-    
-    return render(request, 'products/product_form.html', {'form': form, 'products': products, 'brands': brands, 'families': families})
-
-@login_required
-def product_delete(request, pk):
-    product = get_object_or_404(Product, pk=pk)
-    product.delete()
-    messages.success(request, 'Produto excluído com sucesso!')
-    return redirect('product_list')
-
-# --- Gerenciamento de Estoque ---
-
-class StockMovementForm(forms.ModelForm):
-    class Meta:
-        model = StockMovement
-        fields = ['product', 'movement_type', 'quantity', 'reason']
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs['class'] = 'form-control'
-            if isinstance(field.widget, forms.NumberInput):
-                field.widget.attrs['onfocus'] = 'this.select()'
-
-@login_required
-def stock_manage(request):
-    if request.method == 'POST':
-        form = StockMovementForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Movimentação registrada!')
-            return redirect('stock_manage')
-    else:
-        form = StockMovementForm()
-
-    low_stock = Product.objects.filter(stock_quantity__lte=F('min_stock'))
-    expiring = Product.objects.filter(expiration_date__lte=date.today() + timedelta(days=30))
-    movements = StockMovement.objects.select_related('product').order_by('-created_at')[:20]
-
-    context = {
-        'form': form,
-        'low_stock': low_stock,
-        'expiring': expiring,
-        'movements': movements
-    }
-    return render(request, 'products/stock_manage.html', context)
-
-@login_required
-def pos_view(request):
-    return render(request, 'sales/pos.html')
-
-@login_required
 def reports_dashboard(request):
     # Filtros básicos de data (podem ser expandidos depois)
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
+    period = request.GET.get('period')
+
+    # Lógica de atalhos de data (Dia, Mês, Ano)
+    if period:
+        today = timezone.now().date()
+        if period == 'today':
+            start_date_str = today.strftime('%Y-%m-%d')
+            end_date_str = today.strftime('%Y-%m-%d')
+        elif period == 'month':
+            start_date_str = today.replace(day=1).strftime('%Y-%m-%d')
+            end_date_str = today.strftime('%Y-%m-%d')
+        elif period == 'year':
+            start_date_str = today.replace(month=1, day=1).strftime('%Y-%m-%d')
+            end_date_str = today.strftime('%Y-%m-%d')
     
     # Queryset base de vendas finalizadas
     sales_qs = Sale.objects.filter(status='completed')
@@ -455,98 +289,9 @@ def reports_dashboard(request):
         'end_date': end_date_str,
         'report_data': report_data,   # Dados do relatório visualizado
         'report_type': report_type,   # Tipo selecionado
+        'period': period,
     }
     return render(request, 'reports/index.html', context)
-
-@login_required
-def product_search_api(request):
-    """Busca produtos de forma eficiente para o PDV via API."""
-    q = request.GET.get('q', '')
-    q_norm = normalize_str(q)
-    
-    all_products = Product.objects.all().values('id', 'name', 'selling_price', 'volume', 'stock_quantity', 'image', 'image_url', 'barcode')
-    products = []
-    for p in all_products:
-        if q_norm in normalize_str(p['name']) or (p['barcode'] and q_norm in normalize_str(p['barcode'])):
-            products.append(p)
-            if len(products) >= 20: break
-
-    data = [
-        {
-            'id': p['id'],
-            'name': p['name'],
-            'price': float(p['selling_price']),
-            'volume': p['volume'],
-            'stock': p['stock_quantity'],
-            'image': f"{settings.MEDIA_URL}{p['image']}" if p['image'] else (p['image_url'] if p['image_url'] else '')
-        }
-        for p in products
-    ]
-    return JsonResponse(data, safe=False)
-
-@login_required
-def customer_search_api(request):
-    """Busca clientes de forma eficiente para o PDV via API."""
-    q = request.GET.get('q', '')
-    customers = Customer.objects.filter(name__icontains=q).values('id', 'name')[:10]
-    return JsonResponse(list(customers), safe=False)
-
-@login_required
-@csrf_exempt
-def save_sale(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            
-            with transaction.atomic():
-                # 1. Cria a Venda
-                sale = Sale.objects.create(
-                    customer_id=data.get('customer_id') or None,
-                    payment_method=data.get('payment_method'),
-                    status=data.get('status', 'completed'),
-                    total=0 # Será atualizado abaixo
-                )
-                
-                total_sale = 0
-                
-                # 2. Cria os Itens e Baixa Estoque
-                for item in data.get('items', []):
-                    product = Product.objects.get(id=item['id'])
-                    qty = int(item['quantity'])
-                    price = float(item['price'])
-                    
-                    SaleItem.objects.create(
-                        sale=sale,
-                        product=product,
-                        quantity=qty,
-                        price=price
-                    )
-                    
-                    total_sale += price * qty
-                    
-                    # Baixa Estoque se a venda for finalizada
-                    if sale.status == 'completed':
-                        product.stock_quantity -= qty
-                        product.save()
-                
-                # 3. Aplica Descontos e Taxas
-                discount_val = float(data.get('discount_value', 0))
-                discount_type = data.get('discount_type', 'fixed')
-                tax_val = float(data.get('tax_value', 0))
-                tax_type = data.get('tax_type', 'fixed')
-                
-                discount = discount_val if discount_type == 'fixed' else (total_sale * discount_val / 100)
-                tax = tax_val if tax_type == 'fixed' else (total_sale * tax_val / 100)
-                
-                sale.total = total_sale - discount + tax
-                sale.save()
-                
-            return JsonResponse({'status': 'success', 'sale_id': sale.id})
-            
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)})
-            
-    return JsonResponse({'status': 'error', 'message': 'Método não permitido'})
 
 @login_required
 def download_report_file(request):
@@ -1469,7 +1214,7 @@ def finalize_sale(request, sale_id):
             sale.status = 'completed'
             sale.save()
             # Estoque já foi baixado na criação da venda pendente via StockMovement
-            sale.finalize() # Gera registro de movimentação
+            # sale.finalize() # REMOVIDO: Evita dupla dedução de estoque, pois já foi baixado como pendente
             messages.success(request, f'Venda #{sale.id} efetivada com sucesso! Estoque atualizado.')
     return redirect('pending_sales')
 

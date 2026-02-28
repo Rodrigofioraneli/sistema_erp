@@ -40,14 +40,20 @@ def product_list(request):
     q = request.GET.get('q', '')
     products = Product.objects.all().select_related('brand').order_by('name')
     
-    if q:
-        # Filtra usando Python para ignorar acentos (ex: 'limão' == 'limao')
-        q_norm = normalize_str(q)
-        # Converte QuerySet para lista filtrada
-        products = [p for p in products if q_norm in normalize_str(p.name) or q_norm in normalize_str(p.barcode)]
+    # Processa a lista para adicionar o alerta visual de estoque
+    products_list = []
+    q_norm = normalize_str(q) if q else None
+    
+    for p in products:
+        if q and (q_norm not in normalize_str(p.name) and q_norm not in normalize_str(p.barcode)):
+            continue
+            
+        if p.stock_quantity <= 0 and p.product_type not in ['kit', 'combo']:
+            p.name = f"{p.name} (ESGOTADO ⚠️)"
+        products_list.append(p)
     
     context = {
-        'products': products,
+        'products': products_list,
         'search_query': q
     }
     return render(request, 'products/list.html', context)

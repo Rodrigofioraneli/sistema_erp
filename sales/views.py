@@ -44,7 +44,7 @@ def product_search_api(request):
 
         results.append({
             'id': p.id,
-            'name': p.name,
+            'name': f"{p.name} (ESGOTADO ⚠️)" if p.stock_quantity <= 0 and p.product_type not in ['kit', 'combo'] else p.name,
             'price': float(p.selling_price),
             'image': p.image.url if p.image else (p.image_url if p.image_url else ''),
             'stock': p.stock_quantity,
@@ -97,6 +97,13 @@ def save_sale(request):
                         name=customer_name.strip(),
                         defaults={'cpf_cnpj': None, 'email': '', 'phone': ''}
                     )
+
+                # Validação de Estoque (Impede a venda se não houver saldo)
+                items_check = data.get('items', [])
+                for item in items_check:
+                    prod_check = Product.objects.get(pk=item['id'])
+                    if prod_check.product_type not in ['kit', 'combo'] and prod_check.stock_quantity < item['quantity']:
+                        raise Exception(f"Produto '{prod_check.name}' insuficiente! Estoque atual: {prod_check.stock_quantity}")
 
                 sale = Sale.objects.create(
                     salesperson=request.user,

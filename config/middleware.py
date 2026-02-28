@@ -13,7 +13,7 @@ class LoginRequiredMiddleware:
         # 2. Define a URL de login
         try:
             login_url = reverse('login')
-        except:
+        except Exception:
             login_url = '/accounts/login/'
 
         # 3. Lista de caminhos que NÃO precisam de senha (exceções)
