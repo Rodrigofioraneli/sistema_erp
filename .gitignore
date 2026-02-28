@@ -1,22 +1,27 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Django
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-media/
-staticfiles/
-
-# Ambientes Virtuais
+# Arquivos de Ambiente Virtual
+.venv/
 venv/
 env/
-.env
 
-# IDEs e Sistema Operacional
-.vscode/
-.idea/
+# Arquivos de cache do Python
+__pycache__/
+*.pyc
+
+# Arquivos de log e banco de dados do Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+
+# Arquivo de configurações locais (não deve ser versionado)
+local_settings.py
+
+# Pasta de mídia
+/media/
+
+# Arquivos de sistema operacional
+.DS_Store
 Thumbs.db
+
+# Arquivos de IDE
+.idea/
+.vscode/
