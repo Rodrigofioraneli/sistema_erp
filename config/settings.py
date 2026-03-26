@@ -167,20 +167,20 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Configurações legadas para compatibilidade com django-cloudinary-storage
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
-DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
-
-# Configuração de Armazenamento:
-# Staticfiles usa WhiteNoise para servir arquivos CSS/JS em produção de forma eficiente.
+# Configuração de Armazenamento (Django 5.x)
 STORAGES = {
     "default": {
-        "BACKEND": DEFAULT_FILE_STORAGE,
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": STATICFILES_STORAGE,
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
+
+# Compatibilidade para pacotes legados (Cloudinary) e WhiteNoise não-estrito
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+WHITENOISE_MANIFEST_STRICT = False  # Impede o erro de 'MissingFileError'
 
 # Configurações do Cloudinary (Para manter as fotos dos perfumes salvas no Render)
 if IS_RENDER:
@@ -191,5 +191,5 @@ if IS_RENDER:
     }
     # Só ativa se as chaves estiverem presentes
     if CLOUDINARY_STORAGE['CLOUD_NAME']:
-        DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
         STORAGES["default"] = {"BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage"}
+        DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
