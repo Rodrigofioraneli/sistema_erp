@@ -173,14 +173,15 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.StaticFilesStorage",
     },
 }
 
 # Compatibilidade para pacotes legados (Cloudinary) e WhiteNoise não-estrito
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+STATICFILES_STORAGE = "whitenoise.storage.StaticFilesStorage"
 DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
 WHITENOISE_MANIFEST_STRICT = False  # Impede o erro de 'MissingFileError'
+WHITENOISE_USE_FINDERS = True       # Ajuda o WhiteNoise a encontrar arquivos do Admin
 
 # Configurações do Cloudinary (Para manter as fotos dos perfumes salvas no Render)
 if IS_RENDER:
