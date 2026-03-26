@@ -1,0 +1,21 @@
+{
+  "name": "Perfume ERP",
+  "short_name": "PerfumeERP",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f6f9",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3500/3500833.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3500/3500833.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

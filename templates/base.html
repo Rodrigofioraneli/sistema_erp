@@ -1,0 +1,193 @@
+{% load static %}
+<!-- Declaração do tipo de documento HTML5 -->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <!-- Metadados essenciais para acentuação e responsividade em celulares -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Perfume ERP{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- PWA / Mobile Settings -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3500/3500833.png">
+
+    <!-- Google Fonts: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- DataTables CSS (Estilo para tabelas avançadas) -->
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- DataTables Responsive CSS -->
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        /* --- APLICAÇÃO DA PERSONALIZAÇÃO (Vinda do Middleware) --- */
+        :root {
+            --primary-color: {{ request.theme.primary_color|default:"#3498db" }};
+            --secondary-color: {{ request.theme.secondary_color|default:"#2c3e50" }};
+            --bg-color: {{ request.theme.background_color|default:"#f4f6f9" }};
+            --card-bg: {{ request.theme.card_bg|default:"#ffffff" }};
+            --text-color: {{ request.theme.text_color|default:"#333333" }};
+            --font-main: {{ request.theme.font_family|default:"'Poppins', sans-serif" }};
+            --font-size: {{ request.theme.font_size|default:"14px" }};
+        }
+
+        /* Ajuste para o conteúdo não ficar escondido atrás da navbar fixa */
+        body {
+            padding-top: 0;
+            background-color: var(--bg-color); 
+            font-family: var(--font-main); 
+            font-size: var(--font-size) !important;
+            color: var(--text-color);
+        }
+
+        body.authenticated {
+            padding-top: 80px;
+        }
+        
+        /* Ajustes visuais da navbar */
+        .navbar { background: linear-gradient(to right, var(--secondary-color), #000) !important; padding: 12px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+        .navbar-brand { font-weight: 700; letter-spacing: 0.5px; font-size: 1.4rem; }
+        .nav-link { font-weight: 500; font-size: 0.95rem; transition: color 0.2s; }
+        .nav-link:hover { color: #fff !important; }
+
+        /* Classes Utilitárias para usar as cores personalizadas */
+        .text-primary { color: var(--primary-color) !important; }
+        .bg-primary { background-color: var(--primary-color) !important; }
+        .btn-primary { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
+
+        /* Esconde o campo de busca padrão "Search:" do DataTables (o container pequeno) */
+        .dataTables_filter { display: none !important; }
+        /* Remove a paginação se a lista for pequena (opcional, ajusta visual) */
+        .dataTables_length { display: none !important; }
+
+        /* Ajuste para exibir nome completo dos produtos no PDV */
+        .pdv-container .card-title, 
+        .pdv-container h6 {
+            white-space: normal !important;
+            text-overflow: clip !important;
+            height: auto !important;
+        }
+
+        /* Ajuste para navbar em telas de tablet para evitar quebra de linha */
+        @media (min-width: 992px) and (max-width: 1199.98px) {
+            .navbar-nav .nav-link {
+                font-size: 0.85rem;
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="{% if user.is_authenticated %}authenticated{% endif %}">
+    {% if user.is_authenticated %}
+    <!-- Menu Superior Fixo -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow">
+        <div class="container-fluid">
+            <!-- Botão Hamburguer para Celular -->
+            <button class="navbar-toggler me-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <a class="navbar-brand" href="{% url 'home' %}">Perfume ERP</a>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% if user.is_authenticated %}
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link fw-bold text-warning" href="{% url 'pos_view' %}">🛒 VENDAS</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'pending_sales' %}">⏳ Pendentes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'product_list' %}">📦 Produtos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'kit_manage' %}">🎁 Kits & Combos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'customer_list' %}">👥 Clientes</a></li>
+                    
+                    <!-- Apenas Administradores (Superusuários) veem estes menus -->
+                    {% if user.is_superuser %}
+                    <li class="nav-item"><a class="nav-link" href="{% url 'reports_dashboard' %}">📊 Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'import_data' %}">🧾 Fiscal</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'settings_dashboard' %}">⚙️ Configurações</a></li>
+                    {% endif %}
+                </ul>
+                {% endif %}
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item"><span class="nav-link text-light">Olá, {{ user.username }}</span></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Conteúdo das Páginas -->
+    {% block content %}{% endblock %}
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery e DataTables JS (Necessários para a busca em tempo real) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <!-- DataTables Responsive JS -->
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+    <!-- Plugin para busca sem acento no DataTables -->
+    <script src="https://cdn.datatables.net/plug-ins/1.13.4/filtering/type-based/accent-neutralise.js"></script>
+
+    <script>
+        // Desabilita o alerta de erro do DataTables (Incorrect column count) e envia para o console
+        $.fn.dataTable.ext.errMode = 'none';
+
+        $(document).ready(function() {
+            // Inicializa o DataTables em tabelas com a classe .datatable
+            // Para usar, adicione a classe "datatable" e "table" na sua <table>
+            $('table.datatable').each(function() {
+                // Verifica se já não é uma tabela do PDV (que tem lógica própria)
+                if (!$(this).closest('.pdv-container').length) {
+                    var table = $(this).DataTable({
+                        "responsive": true, // Habilita a responsividade
+                        "language": { "url": "//cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json" },
+                        "retrieve": true, // Usa instância existente se houver
+                        "dom": 'rtip',    // Define layout: (r)ocessando, (t)abela, (i)nfo, (p)aginação. Remove 'f' (filtro padrão).
+                        "pageLength": 50  // Mostra 50 itens por padrão
+                    });
+
+                    // Conecta seu input de busca personalizado (name="q") à tabela
+                    $('input[name="q"]').on('keyup', function() {
+                        table.search(this.value).draw();
+                    });
+
+                    // Impede que o Enter recarregue a página (já que a busca é ao vivo)
+                    $('input[name="q"]').closest('form').on('submit', function(e) {
+                        e.preventDefault();
+                    });
+                }
+            });
+        });
+
+        // --- Função Global de Formatação de Moeda (Esquerda para Direita) ---
+        // Ex: Digita '1200' -> '1.200'. Digita ',' -> '1.200,'. Digita '50' -> '1.200,50'
+        function formatCurrency(input) {
+            // Remove tudo que não é dígito ou vírgula
+            let value = input.value.replace(/[^\d,]/g, '');
+            
+            // Garante apenas uma vírgula
+            let parts = value.split(',');
+            
+            // Formata o milhar na parte inteira
+            let integerPart = parts[0].replace(/\./g, '');
+            integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            
+            // Monta o resultado (Inteiro + Decimal limitado a 2 casas)
+            let decimalPart = parts.length > 1 ? ',' + parts[1].slice(0, 2) : '';
+            input.value = integerPart + decimalPart;
+        }
+    </script>
+
+</body>
+</html>

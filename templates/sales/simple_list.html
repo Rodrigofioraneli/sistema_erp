@@ -1,0 +1,32 @@
+<div class="col-md-4">
+    <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+            <span>{{ icon }} {{ title }}</span>
+        </div>
+        <div class="card-body">
+            <form method="post" class="d-flex gap-2 mb-3">
+                {% csrf_token %}
+                <input type="hidden" name="item_action" value="add">
+                <input type="hidden" name="model_type" value="{{ type }}">
+                <input type="text" name="item_name" class="form-control form-control-sm" placeholder="Novo item..." required>
+                <button type="submit" class="btn btn-sm btn-primary fw-bold">+</button>
+            </form>
+            <ul class="list-group list-group-flush small" style="max-height: 250px; overflow-y: auto;">
+                {% for item in items %}
+                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                    {{ item.name }}
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="item_action" value="delete">
+                        <input type="hidden" name="model_type" value="{{ type }}">
+                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                        <button type="submit" class="btn btn-sm text-danger border-0 p-0" title="Excluir" onclick="return confirm('Tem certeza que deseja remover este item?')">×</button>
+                    </form>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-center text-muted border-0 fst-italic">Nenhum registro.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>

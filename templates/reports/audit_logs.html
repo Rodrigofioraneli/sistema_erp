@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 style="color: #2c3e50;">🛡️ Logs de Auditoria e Segurança</h2>
+    <p class="text-muted">Histórico de alterações realizadas no sistema (Vendas, Produtos, Clientes).</p>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Usuário</th>
+                            <th>Ação</th>
+                            <th>Módulo</th>
+                            <th>Item Afetado</th>
+                            <th>Detalhes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td style="white-space: nowrap;">{{ log.timestamp|date:"d/m/Y H:i:s" }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ log.user.username|default:"Sistema" }}</span>
+                            </td>
+                            <td>
+                                {% if log.action == 'CREATE' %}
+                                    <span class="badge bg-success">Criação</span>
+                                {% elif log.action == 'UPDATE' %}
+                                    <span class="badge bg-warning text-dark">Alteração</span>
+                                {% elif log.action == 'DELETE' %}
+                                    <span class="badge bg-danger">Exclusão</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ log.model_name }}</td>
+                            <td class="fw-bold">{{ log.object_repr }} <small class="text-muted">(ID: {{ log.object_id }})</small></td>
+                            <td>
+                                <small class="text-muted">{{ log.changes|truncatechars:50 }}</small>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center py-5 text-muted">Nenhum registro de atividade encontrado.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

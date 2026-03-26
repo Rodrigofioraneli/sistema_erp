@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 style="color: #f39c12;">⏳ Vendas Pendentes / Orçamentos</h2>
+    <p class="text-muted">Gerencie orçamentos e vendas aguardando pagamento. Ao efetivar, o estoque será baixado.</p>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#ID</th>
+                            <th>Data</th>
+                            <th>Cliente</th>
+                            <th>Itens</th>
+                            <th>Parcelas</th>
+                            <th>Financeiro</th>
+                            <th style="text-align: right;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr>
+                            <td><a href="{% url 'sale_detail' sale.id %}" class="text-decoration-none fw-bold">#{{ sale.id }}</a></td>
+                            <td>{{ sale.created_at|date:"d/m/Y H:i" }}</td>
+                            <td>{{ sale.customer.name|default:"Consumidor Final" }}</td>
+                            <td>
+                                <small class="text-muted">
+                                    {% for item in sale.items.all %}
+                                        {{ item.quantity }}x {{ item.product.name }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </small>
+                            </td>
+                            <td>
+                                {% if sale.installments > 1 %}
+                                    <span class="badge bg-info text-dark">{{ sale.installments }}x</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark border">À Vista</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">Total: R$ {{ sale.total|floatformat:2 }}</div>
+                                <div class="text-success small">Pago: R$ {{ sale.amount_paid|floatformat:2 }}</div>
+                                <div class="text-danger small fw-bold">Restam: R$ {{ sale.remaining|floatformat:2 }}</div>
+                            </td>
+                            <td style="text-align: right;">
+                                <button class="btn btn-sm btn-success" 
+                                        data-url="{% url 'register_payment' sale.id %}"
+                                        onclick="openPaymentModal(this, '{{ sale.remaining }}')">
+                                    💰 Pagar
+                                </button>
+                                <a href="{% url 'delete_sale' sale.id %}" class="btn btn-sm btn-outline-danger" title="Cancelar/Excluir" onclick="return confirm('Tem certeza que deseja excluir este orçamento?');">
+                                    🗑️
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center py-5 text-muted">Nenhuma venda pendente encontrada.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Pagamento -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="paymentForm" action="">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Registrar Pagamento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">Saldo Restante: <strong id="modalRemaining" class="text-danger">R$ 0,00</strong></p>
+          
+          <div class="mb-3">
+            <label for="modalAmount" class="form-label fw-bold">Valor a pagar agora</label>
+            <input type="text" name="amount" id="modalAmount" class="form-control money" required oninput="formatMoney(this)">
+            <div class="form-text">Insira o valor parcial ou total.</div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label fw-bold">Forma de Pagamento</label>
+            <select name="payment_method" class="form-select">
+                <option value="pix">PIX</option>
+                <option value="credit">Crédito</option>
+                <option value="debit">Débito</option>
+                <option value="cash">Dinheiro</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" name="action_type" value="save" class="btn btn-primary">💾 Salvar Parcial</button>
+          <button type="submit" name="action_type" value="finalize" class="btn btn-success">✅ Finalizar Venda</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function formatMoney(input) {
+    // Permite digitar da esquerda para a direita (sem dividir por 100 automaticamente)
+    let v = input.value.replace(/[^\d,]/g, '');
+    
+    // Garante apenas uma vírgula e limita casas decimais
+    const parts = v.split(',');
+    if (parts.length > 2) v = parts[0] + ',' + parts.slice(1).join('');
+    
+    // Formata o milhar na parte inteira
+    let integerPart = parts[0].replace(/\./g, '');
+    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    
+    // Remonta o valor
+    input.value = (parts.length > 1) ? integerPart + ',' + parts[1].slice(0, 2) : integerPart;
+}
+
+function openPaymentModal(button, remaining) {
+    const form = document.getElementById('paymentForm');
+    // Pega a URL gerada pelo Django no atributo data-url
+    form.action = button.dataset.url;
+    
+    // Formata o valor para exibição
+    // O 'remaining' vem do Django, pode ter ',' como decimal ou '.' como milhar. O JS precisa de um formato limpo.
+    const remainingClean = String(remaining).replace(/\./g, '').replace(',', '.');
+    const remainingFloat = parseFloat(remainingClean);
+    document.getElementById('modalRemaining').innerText = 'R$ ' + remainingFloat.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    
+    // Preenche o input com o valor restante (sugestão de pagamento total)
+    document.getElementById('modalAmount').value = remainingFloat.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    
+    // Abre o modal
+    new bootstrap.Modal(document.getElementById('paymentModal')).show();
+}
+</script>
+{% endblock %}

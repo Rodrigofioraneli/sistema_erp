@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .export-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 30px; }
+    .export-card { 
+        background: white; padding: 30px; border-radius: 12px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; 
+        transition: transform 0.2s;
+    }
+    .export-card:hover { transform: translateY(-5px); }
+    .card-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
+    .card-title { font-size: 1.5rem; font-weight: bold; color: #2c3e50; margin-bottom: 20px; }
+    
+    .btn-group { display: flex; flex-direction: column; gap: 10px; }
+    .btn-export { 
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        padding: 12px; border-radius: 8px; text-decoration: none; font-weight: bold; color: white;
+        transition: opacity 0.2s;
+    }
+    .btn-export:hover { opacity: 0.9; }
+    
+    .btn-pdf { background-color: #e74c3c; }
+    .btn-excel { background-color: #27ae60; }
+    .btn-csv { background-color: #3498db; }
+</style>
+
+<h1 style="color: #2c3e50;">💾 Central de Exportação e Importação</h1>
+<p style="color: #7f8c8d;">Selecione o módulo e o formato desejado para baixar seus dados.</p>
+
+{% if messages %}
+    {% for message in messages %}
+        <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #c3e6cb;">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<div class="export-grid">
+    <!-- Produtos -->
+    <div class="export-card">
+        <span class="card-icon">📦</span>
+        <div class="card-title">Produtos</div>
+        <div class="btn-group">
+            <a href="{% url 'export_data' 'products' 'pdf' %}" class="btn-export btn-pdf">📄 Baixar PDF</a>
+            <a href="{% url 'export_data' 'products' 'excel' %}" class="btn-export btn-excel">📊 Baixar Excel</a>
+            <a href="{% url 'export_data' 'products' 'csv' %}" class="btn-export btn-csv">📝 Baixar CSV</a>
+        </div>
+    </div>
+
+    <!-- Clientes -->
+    <div class="export-card">
+        <span class="card-icon">👥</span>
+        <div class="card-title">Clientes</div>
+        <div class="btn-group">
+            <a href="{% url 'export_data' 'customers' 'pdf' %}" class="btn-export btn-pdf">📄 Baixar PDF</a>
+            <a href="{% url 'export_data' 'customers' 'excel' %}" class="btn-export btn-excel">📊 Baixar Excel</a>
+            <a href="{% url 'export_data' 'customers' 'csv' %}" class="btn-export btn-csv">📝 Baixar CSV</a>
+        </div>
+    </div>
+
+    <!-- Vendas -->
+    <div class="export-card">
+        <span class="card-icon">💰</span>
+        <div class="card-title">Vendas</div>
+        <div class="btn-group">
+            <a href="{% url 'export_data' 'sales' 'pdf' %}" class="btn-export btn-pdf">📄 Baixar PDF</a>
+            <a href="{% url 'export_data' 'sales' 'excel' %}" class="btn-export btn-excel">📊 Baixar Excel</a>
+            <a href="{% url 'export_data' 'sales' 'csv' %}" class="btn-export btn-csv">📝 Baixar CSV</a>
+        </div>
+    </div>
+
+    <!-- Importação -->
+    <div class="export-card" style="border: 2px dashed #95a5a6;">
+        <span class="card-icon">📥</span>
+        <div class="card-title">Importar Excel</div>
+        <form method="post" action="{% url 'import_data' %}" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 10px;">
+            {% csrf_token %}
+            <select name="model" required style="padding: 10px; border-radius: 6px; border: 1px solid #ddd; width: 100%;">
+                <option value="" disabled selected>Selecione o Tipo...</option>
+                <option value="products">Produtos</option>
+                <option value="customers">Clientes</option>
+            </select>
+            <input type="file" name="file" accept=".xlsx" required style="font-size: 0.9rem;">
+            <button type="submit" class="btn-export btn-excel" style="border: none; cursor: pointer; width: 100%;">📤 Enviar Planilha</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

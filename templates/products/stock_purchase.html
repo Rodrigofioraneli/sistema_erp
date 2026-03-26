@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 style="color: #27ae60;">📦 Entrada de Produtos</h2>
+            <p class="text-muted">Registre compras de estoque. O custo médio será recalculado automaticamente.</p>
+        </div>
+        <a href="{% url 'stock_manage' %}" class="btn btn-outline-secondary">Ver Histórico</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">{{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form method="post" id="entryForm" onsubmit="return confirm('Confirma a entrada deste produto no estoque? Verifique o custo e a quantidade.');">
+                {% csrf_token %}
+                <!-- Oculta o tipo de movimento, pois aqui é sempre Entrada -->
+                <div style="display:none;">
+                    {{ form.movement_type }}
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Produto</label>
+                        
+                        <!-- Campo de Busca Visual -->
+                        <div class="position-relative">
+                            <input type="text" id="product_search_visual" class="form-control" 
+                                   placeholder="🔍 Digite nome ou código de barras para buscar..." 
+                                   autocomplete="off"
+                                   value="{% if selected_product %}{{ selected_product.name }}{% endif %}">
+                            <div id="product_results" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1000; display: none; max-height: 250px; overflow-y: auto;"></div>
+                        </div>
+                        
+                        <!-- Campo Oculto Original (O Django precisa disso para salvar) -->
+                        <div style="display:none;">{{ form.product }}</div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Quantidade (Unidades)</label>
+                        {{ form.quantity }}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Custo Unitário desta Compra (R$)</label>
+                        <!-- Adiciona classe para identificar o input e garantir tipo text para mascara -->
+                        <input type="text" name="entry_cost" id="id_entry_cost" class="form-control" required>
+                        <small class="text-muted">Valor pago por unidade nesta nota.</small>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Observação / Motivo</label>
+                        {{ form.reason }}
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-top d-flex justify-content-between align-items-center">
+                    <a href="{% url 'product_list' %}" class="btn btn-secondary">⬅️ Voltar para Lista</a>
+                    <button type="submit" class="btn btn-success btn-lg px-4">
+                        📥 Confirmar Entrada e Atualizar Custo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const searchInput = document.getElementById('product_search_visual');
+    const resultsDiv = document.getElementById('product_results');
+    const hiddenInput = document.getElementById('id_product'); // Select/Input oculto do Django
+    const costInput = document.getElementById('id_entry_cost');
+
+    // --- Máscara de Moeda (Formatação automática) ---
+    costInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não é número
+        value = (Number(value) / 100).toFixed(2) + ""; // Divide por 100 para casas decimais
+        value = value.replace(".", ","); // Troca ponto por vírgula
+        value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1."); // Adiciona pontos de milhar
+        e.target.value = value;
+    });
+
+    // --- Limpeza antes de enviar (Para o Django aceitar) ---
+    document.getElementById('entryForm').addEventListener('submit', function() {
+        // Remove pontos e troca vírgula por ponto para formato americano (aceito pelo banco de dados)
+        // Ex: 1.200,50 vira 1200.50
+        if(costInput.value) {
+            let cleanValue = costInput.value.replace(/\./g, '').replace(',', '.');
+            costInput.value = cleanValue;
+        }
+    });
+
+    // Evento de Digitação
+    searchInput.addEventListener('input', function() {
+        const query = this.value;
+        if (query.length < 2) {
+            resultsDiv.style.display = 'none';
+            return;
+        }
+        
+        // Busca na API (reutilizando a lógica do PDV)
+        fetch(`/vendas/api/search-products/?q=${query}`)
+            .then(res => res.json())
+            .then(data => {
+                resultsDiv.innerHTML = '';
+                if (data.length > 0) {
+                    resultsDiv.style.display = 'block';
+                    data.forEach(p => {
+                        const item = document.createElement('a');
+                        item.className = 'list-group-item list-group-item-action d-flex align-items-center gap-2';
+                        item.href = '#';
+                        item.innerHTML = `
+                            <img src="${p.image || 'https://via.placeholder.com/40'}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                            <div>
+                                <div class="fw-bold">${p.name}</div>
+                                <small class="text-muted">Ref: ${p.barcode || '-'} | Custo Atual: R$ ${p.cost_price.toFixed(2)}</small>
+                            </div>
+                        `;
+                        item.onclick = (e) => {
+                            e.preventDefault();
+                            
+                            // Seleciona o produto
+                            searchInput.value = p.name;
+                            hiddenInput.value = p.id; // Atualiza o campo real do formulário Django
+                            
+                            // Sugere o custo atual
+                            if (costInput) {
+                                // Formata o valor vindo do banco para o padrão visual (PT-BR)
+                                let val = p.cost_price.toFixed(2).replace('.', ',');
+                                val = val.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+                                costInput.value = val;
+                            }
+                            
+                            resultsDiv.style.display = 'none';
+                        };
+                        resultsDiv.appendChild(item);
+                    });
+                } else {
+                    resultsDiv.style.display = 'none';
+                }
+            });
+    });
+
+    // Fechar resultados ao clicar fora
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+            resultsDiv.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

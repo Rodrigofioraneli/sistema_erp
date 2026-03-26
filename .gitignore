@@ -1,0 +1,22 @@
+*.py[cod]
+*$py.class
+__pycache__/
+
+# Banco de Dados Local (Não subir para o GitHub)
+db.sqlite3
+
+# Arquivos de Mídia e Estáticos Gerados
+/media/
+/staticfiles/
+
+# Ambientes Virtuais
+venv/
+env/
+ENV/
+
+# Configurações de IDE (VS Code, PyCharm)
+.vscode/
+.idea/
+
+# Variáveis de Ambiente e Segredos
+.env

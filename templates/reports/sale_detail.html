@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0" style="color: #2c3e50;">🧾 Detalhes da Venda #{{ sale.id }}</h2>
+            <p class="text-muted">{{ sale.created_at|date:"d/m/Y às H:i" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'reports_dashboard' %}" class="btn btn-outline-secondary">⬅️ Voltar</a>
+            
+            <!-- Botões de Nota Fiscal -->
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                    📄 Notas
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'download_fiscal' sale.id 'cupom' %}">🖨️ Cupom (80mm)</a></li>
+                    <li><a class="dropdown-item" href="{% url 'download_fiscal' sale.id 'danfe' %}">📄 A4 (Simplificado)</a></li>
+                </ul>
+            </div>
+            
+            <a href="{% url 'delete_sale' sale.id %}" class="btn btn-danger" onclick="return confirm('ATENÇÃO: Isso excluirá a venda e DEVOLVERÁ os itens ao estoque.\n\nDeseja continuar?')">
+                🗑️ Excluir / Estornar
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">{{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Formulário Único para Tudo -->
+    <form method="post">
+        {% csrf_token %}
+        <div class="row g-4">
+            <!-- Lista de Produtos -->
+            <div class="col-md-8">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white fw-bold py-3">🛒 Itens da Venda</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Produto</th>
+                                        <th class="text-center" style="width: 100px;">Qtd</th>
+                                        <th class="text-end" style="width: 180px;">Preço Unit.</th>
+                                        <th class="text-end">Subtotal</th>
+                                        <th class="text-center">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in sale.items.all %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">{{ item.product.name }}</div>
+                                            <small class="text-muted">{{ item.product.barcode|default:'' }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="number" name="quantity_{{ item.id }}" value="{{ item.quantity }}" class="form-control form-control-sm text-center" min="1" required>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">R$</span>
+                                                <input type="text" name="price_{{ item.id }}" value="{{ item.price|floatformat:2 }}" class="form-control form-control-sm text-end money" oninput="formatCurrency(this)" required>
+                                            </div>
+                                        </td>
+                                        <td class="text-end fw-bold">R$ {{ item.subtotal|floatformat:2 }}</td>
+                                        <td class="text-center">
+                                            <a href="{% url 'delete_sale_item' item.id %}" class="btn btn-sm btn-outline-danger" title="Remover Item" onclick="return confirm('Remover este item da venda? O estoque será estornado.');">
+                                                🗑️
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <td colspan="4" class="text-end fw-bold">TOTAL GERAL</td>
+                                        <td class="text-end fw-bold text-success fs-5">R$ {{ sale.total|floatformat:2 }}</td>
+                                    </tr>
+                                    {% if sale.amount_paid > 0 %}
+                                    <tr class="text-muted">
+                                        <td colspan="4" class="text-end small">Já Pago:</td>
+                                        <td class="text-end small">R$ {{ sale.amount_paid|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endif %}
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editar Informações -->
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white fw-bold py-3">✏️ Editar Informações</div>
+                    <div class="card-body">
+                        <!-- Campos de Metadados -->
+                        <div class="mb-3">
+                            <label for="id_created_at" class="form-label">Data da Venda</label>
+                            <input type="datetime-local" name="created_at" id="id_created_at" class="form-control" 
+                                   value="{{ sale.created_at|date:'Y-m-d\TH:i' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_customer" class="form-label">Cliente</label>
+                            <select name="customer" id="id_customer" class="form-select">
+                                <option value="">Consumidor Final (Sem cadastro)</option>
+                                {% for c in customers %}
+                                    <option value="{{ c.id }}" {% if sale.customer_id == c.id %}selected{% endif %}>
+                                        {{ c.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_payment_method" class="form-label">Forma de Pagamento</label>
+                            <select name="payment_method" id="id_payment_method" class="form-select">
+                                <option value="pix" {% if sale.payment_method == 'pix' %}selected{% endif %}>PIX</option>
+                                <option value="credit" {% if sale.payment_method == 'credit' %}selected{% endif %}>Cartão de Crédito</option>
+                                <option value="debit" {% if sale.payment_method == 'debit' %}selected{% endif %}>Cartão de Débito</option>
+                                <option value="cash" {% if sale.payment_method == 'cash' %}selected{% endif %}>Dinheiro</option>
+                            </select>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small">Desconto</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" name="discount_value" class="form-control money" value="{{ sale.discount_value|floatformat:2 }}" oninput="formatCurrency(this)">
+                                    <select name="discount_type" class="form-select" style="max-width: 60px;">
+                                        <option value="fixed" {% if sale.discount_type == 'fixed' %}selected{% endif %}>R$</option>
+                                        <option value="percent" {% if sale.discount_type == 'percent' %}selected{% endif %}>%</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Taxa/Acréscimo</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" name="tax_value" class="form-control money" value="{{ sale.tax_value|floatformat:2 }}" oninput="formatCurrency(this)">
+                                    <select name="tax_type" class="form-select" style="max-width: 60px;">
+                                        <option value="fixed" {% if sale.tax_type == 'fixed' %}selected{% endif %}>R$</option>
+                                        <option value="percent" {% if sale.tax_type == 'percent' %}selected{% endif %}>%</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botão Único de Salvar -->
+                        <button type="submit" class="btn btn-primary w-100 btn-lg">💾 Salvar Tudo</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

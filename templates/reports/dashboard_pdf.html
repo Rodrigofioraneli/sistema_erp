@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            font-size: 18pt;
+            margin-bottom: 5px;
+        }
+        h2 {
+            color: #34495e;
+            font-size: 14pt;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        h3 {
+            color: #7f8c8d;
+            font-size: 12pt;
+            margin-top: 15px;
+            margin-bottom: 5px;
+        }
+        .meta {
+            color: #777;
+            font-size: 9pt;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th, td {
+            border: 1px solid #eee;
+            padding: 6px;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .num {
+            text-align: right;
+        }
+        .kpi-box {
+            background-color: #f0f4f8;
+            padding: 10px;
+            border: 1px solid #dce4ec;
+            margin-bottom: 10px;
+        }
+        .kpi-val {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Relatório Estratégico</h1>
+    <div class="meta">
+        Gerado em: {% now "d/m/Y H:i" %}<br>
+        Período: {{ start_date|default:"Início" }} até {{ end_date|default:"Hoje" }}
+    </div>
+
+    {% if show_sales %}
+    <h2>1. Vendas & Performance</h2>
+    <table style="border: none;">
+        <tr style="border: none;">
+            <td style="border: none; width: 33%;">
+                <div class="kpi-box">
+                    Faturamento<br>
+                    <span class="kpi-val">R$ {{ sales_metrics.total_revenue|floatformat:2|default:"0,00" }}</span>
+                </div>
+            </td>
+            <td style="border: none; width: 33%;">
+                <div class="kpi-box">
+                    Vendas<br>
+                    <span class="kpi-val">{{ sales_metrics.total_count|default:"0" }}</span>
+                </div>
+            </td>
+            <td style="border: none; width: 33%;">
+                <div class="kpi-box">
+                    Ticket Médio<br>
+                    <span class="kpi-val">R$ {{ sales_metrics.avg_ticket|floatformat:2|default:"0,00" }}</span>
+                </div>
+            </td>
+        </tr>
+    </table>
+    {% endif %}
+
+    {% if show_financial %}
+    <h2>2. Resumo Financeiro</h2>
+    <table>
+        <tr><th>Descrição</th><th class="num">Valor</th></tr>
+        <tr><td>Receita Bruta</td><td class="num">R$ {{ sales_metrics.total_revenue|floatformat:2|default:"0,00" }}</td></tr>
+        <tr><td>Despesas Totais</td><td class="num" style="color: #c0392b;">- R$ {{ total_expenses|floatformat:2|default:"0,00" }}</td></tr>
+        <tr><td><strong>Resultado Líquido</strong></td><td class="num"><strong>R$ {{ net_profit|floatformat:2|default:"0,00" }}</strong></td></tr>
+    </table>
+    {% endif %}
+
+    {% if show_products %}
+    <h2>3. Produtos</h2>
+    <h3>Top 10 Mais Vendidos</h3>
+    <table>
+        <thead><tr><th>Produto</th><th class="num">Qtd</th></tr></thead>
+        <tbody>
+            {% for item in top_products %}
+            <tr><td>{{ item.product__name }}</td><td class="num">{{ item.total_qty }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if show_stock %}
+    <h2>4. Estoque</h2>
+    <div class="kpi-box">
+        Valor Total em Estoque: <strong>R$ {{ stock_metrics.total_value|floatformat:2|default:"0,00" }}</strong><br>
+        Total de Itens: <strong>{{ stock_metrics.total_items|default:"0" }}</strong>
+    </div>
+    {% endif %}
+
+</body>
+</html>
