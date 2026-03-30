@@ -182,6 +182,21 @@
     const resultsContainer = document.getElementById('search-results');
     let searchTimeout = null;
 
+    // Suporte para Leitor de Código de Barras Físico
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const query = this.value.trim();
+            if (query.length >= 8) {
+                fetch(`{% url 'product_search_api' %}?q=${query}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.length === 1) addToCart(data[0]);
+                    });
+            }
+        }
+    });
+
     searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
         const q = this.value;

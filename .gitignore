@@ -1,22 +1,11 @@
 *.py[cod]
-*$py.class
 __pycache__/
-
-# Banco de Dados Local (Não subir para o GitHub)
+*.so
+.python-version
 db.sqlite3
-
-# Arquivos de Mídia e Estáticos Gerados
-/media/
-/staticfiles/
-
-# Ambientes Virtuais
+media/
+staticfiles/
+.env
 venv/
 env/
-ENV/
-
-# Configurações de IDE (VS Code, PyCharm)
 .vscode/
-.idea/
-
-# Variáveis de Ambiente e Segredos
-.env

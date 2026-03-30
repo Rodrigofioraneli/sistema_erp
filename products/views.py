@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.db.models import Q, F
+from django.http import JsonResponse
 from .forms import ProductForm, StockMovementForm
 from .models import Product, OlfactoryFamily, Brand, StockMovement, ProductComponent
 from datetime import date, timedelta
@@ -261,4 +262,27 @@ def kit_manage(request):
         'products_search': products_search,
         'search_query': q,
         'active_kit': active_kit
+    })
+
+@login_required
+def api_external_ean_lookup(request, barcode):
+    """
+    Busca dados de um produto novo pelo EAN em APIs externas.
+    Exemplo: Cosmos/Bluesoft (exige token) ou uma busca simulada.
+    """
+    # Verificamos se já existe localmente primeiro
+    local_prod = Product.objects.filter(barcode=barcode).first()
+    if local_prod:
+        return JsonResponse({
+            'status': 'exists',
+            'name': local_prod.name,
+            'price': float(local_prod.selling_price)
+        })
+
+    # Aqui você integraria com a API do Bluesoft Cosmos
+    # Por enquanto, retornamos um template para o frontend saber que é novo
+    return JsonResponse({
+        'status': 'new',
+        'barcode': barcode,
+        'message': 'Produto não encontrado. Deseja cadastrar?'
     })

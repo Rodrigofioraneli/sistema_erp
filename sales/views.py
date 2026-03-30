@@ -35,16 +35,27 @@ def product_search_api(request):
     Utiliza normalização para permitir que 'Perfume' e 'perfume' ou 'Joao' e 'João' coincidam.
     Usada pelo Javascript do PDV para preencher a lista de pesquisa.
     """
-    # Pega o termo digitado na URL (?q=perfume)
-    query = request.GET.get('q', '')
+    query = request.GET.get('q', '').strip()
+    if not query:
+        return JsonResponse([], safe=False)
 
-    # Otimização Profissional: Deixamos o Banco de Dados (SQL) fazer o trabalho pesado.
-    # O uso de Q objects com icontains é significativamente mais rápido que loops em Python.
-    products = Product.objects.select_related('brand').prefetch_related('components__component').filter(
-        Q(name__icontains=query) | 
-        Q(barcode__icontains=query) |
-        Q(brand__name__icontains=query)
-    )[:20]
+    # Se a busca for numérica (EAN-13), tentamos primeiro a busca EXATA (muito mais rápido para o leitor)
+    if query.isdigit() and len(query) >= 8:
+        products = Product.objects.select_related('brand').prefetch_related('components__component').filter(
+            barcode=query
+        )
+        # Se não achou exato, tenta parcial
+        if not products.exists():
+            products = Product.objects.select_related('brand').prefetch_related('components__component').filter(
+                barcode__icontains=query
+            )[:5]
+    else:
+        # Busca textual padrão por nome ou marca
+        products = Product.objects.select_related('brand').prefetch_related('components__component').filter(
+            Q(name__icontains=query) | 
+            Q(barcode__icontains=query) |
+            Q(brand__name__icontains=query)
+        )[:20]
     
     results = []
     for p in products:
