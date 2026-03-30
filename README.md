@@ -25,7 +25,7 @@ Para rodar online no Render:
 3. Em **Build Command**, insira: `./build.sh`
 4. Em **Start Command**, insira: `gunicorn config.wsgi:application`
 5. Adicione as seguintes **Environment Variables**:
-   - `PYTHON_VERSION`: `3.11.0` (ou a versão que você usa)
+   - `PYTHON_VERSION`: `3.12.0`
    - `SECRET_KEY`: Gere uma chave aleatória segura.
    - `WEB_CONCURRENCY`: `2` (Opcional, para performance do Gunicorn)
 6. Adicione um **PostgreSQL** no Render e linke ao seu serviço (o Render criará a variável `DATABASE_URL` automaticamente).
