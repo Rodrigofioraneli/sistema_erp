@@ -59,6 +59,12 @@ def product_list(request):
 
 def product_create(request):
     products = get_common_context(request)
+    # Captura o código de barras vindo da URL (quando redirecionado pelo scanner)
+    initial_data = {}
+    barcode = request.GET.get('barcode')
+    if barcode:
+        initial_data['barcode'] = barcode
+
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
@@ -66,7 +72,7 @@ def product_create(request):
             messages.success(request, 'Produto cadastrado com sucesso! 🧴')
             return redirect('product_create')
     else:
-        form = ProductForm()
+        form = ProductForm(initial=initial_data)
     
     return render(request, 'products/product_form.html', {'form': form, 'products': products})
 

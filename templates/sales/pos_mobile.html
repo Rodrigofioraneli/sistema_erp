@@ -388,15 +388,32 @@
     function startScanner() {
         new bootstrap.Modal(document.getElementById('scanModal')).show();
         html5QrcodeScanner = new Html5Qrcode("reader");
-        html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
+        
+        // Configuração otimizada para códigos de barras lineares (EAN-13)
+        // Aumentamos o FPS e usamos um qrbox retangular para facilitar o foco
+        const config = { 
+            fps: 20, 
+            qrbox: { width: 300, height: 150 }, 
+            aspectRatio: 1.0
+        };
+
+        html5QrcodeScanner.start({ facingMode: "environment" }, config, 
         (decodedText) => {
             stopScanner();
+            if (navigator.vibrate) navigator.vibrate(100); // Vibra ao ler com sucesso
+
             // Busca produto pelo código
             fetch(`{% url 'product_search_api' %}?q=${decodedText}`)
                 .then(r => r.json())
                 .then(data => {
-                    if(data.length > 0) addToCart(data[0]);
-                    else alert('Produto não encontrado!');
+                    if(data.length > 0) {
+                        addToCart(data[0]);
+                    } else {
+                        // Se não encontrar, oferece para ir direto ao cadastro
+                        if(confirm(`Código ${decodedText} não encontrado. Deseja cadastrar este novo produto?`)) {
+                            window.location.href = `{% url 'product_create' %}?barcode=${decodedText}`;
+                        }
+                    }
                 });
         });
     }
